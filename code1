@@ -1,0 +1,4396 @@
+
+# ============================================================
+# RICE AND SUGARCANE LEAF DISEASE CLASSIFICATION
+# BLOCK 1: PROJECT INITIALIZATION AND CONFIGURATION
+#
+# Framework: TensorFlow 2.15.1 / Keras
+# Backend: CPU or GPU (automatically detected)
+#
+# PROPOSED MODEL:
+#   Ours: CNN + Multi-Head Attention + Grad-CAM
+#
+# BASELINES:
+#   B1: EfficientNetB5 + Grad-CAM
+#   B2: EfficientNetB5 + LIME
+#   B3: VGG16 + VGG19 + ResNet101V2 + InceptionV3 + LIME
+#   B4: ResNet-9 + SHAP
+#
+# DATASETS:
+#   Rice leaf disease
+#   Sugarcane leaf disease
+# ============================================================
+
+
+# ============================================================
+# 1. IMPORT REQUIRED LIBRARIES
+# ============================================================
+
+import os
+import sys
+import json
+import random
+import logging
+import platform
+
+from pathlib import Path
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+
+import tensorflow as tf
+import keras
+
+from PIL import Image
+
+import cv2
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.class_weight import compute_class_weight
+
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report,
+    roc_auc_score,
+    matthews_corrcoef,
+    cohen_kappa_score,
+    balanced_accuracy_score
+)
+
+
+# ============================================================
+# 2. PROJECT DIRECTORY CONFIGURATION
+# ============================================================
+
+PROJECT_DIR = Path(
+    r"E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3"
+)
+
+# Dataset directories
+DATA_DIR = PROJECT_DIR / "data"
+
+RAW_DATA_DIR = DATA_DIR / "raw"
+
+RICE_DIR = RAW_DATA_DIR / "rice"
+
+SUGARCANE_DIR = RAW_DATA_DIR / "sugarcane"
+
+# Confirmed manifest locations
+RICE_MANIFEST_PATH = (
+    RICE_DIR / "dataset_manifest.json"
+)
+
+SUGARCANE_MANIFEST_PATH = (
+    SUGARCANE_DIR / "dataset_manifest.json"
+)
+
+
+# ============================================================
+# 3. OUTPUT DIRECTORY CONFIGURATION
+# ============================================================
+
+MODEL_DIR = PROJECT_DIR / "models"
+
+RESULTS_DIR = PROJECT_DIR / "results"
+
+CHECKPOINT_DIR = RESULTS_DIR / "checkpoints"
+
+FIGURE_DIR = RESULTS_DIR / "figures"
+
+TABLE_DIR = RESULTS_DIR / "tables"
+
+LOG_DIR = RESULTS_DIR / "logs"
+
+PREDICTION_DIR = RESULTS_DIR / "predictions"
+
+EXPLAINABILITY_DIR = RESULTS_DIR / "explainability"
+
+GRADCAM_DIR = EXPLAINABILITY_DIR / "gradcam"
+
+LIME_DIR = EXPLAINABILITY_DIR / "lime"
+
+SHAP_DIR = EXPLAINABILITY_DIR / "shap"
+
+PROCESSED_DATA_DIR = DATA_DIR / "processed"
+
+CACHE_DIR = PROJECT_DIR / "cache"
+
+
+# Create required output directories
+DIRECTORIES = [
+    MODEL_DIR,
+    RESULTS_DIR,
+    CHECKPOINT_DIR,
+    FIGURE_DIR,
+    TABLE_DIR,
+    LOG_DIR,
+    PREDICTION_DIR,
+    EXPLAINABILITY_DIR,
+    GRADCAM_DIR,
+    LIME_DIR,
+    SHAP_DIR,
+    PROCESSED_DATA_DIR,
+    CACHE_DIR
+]
+
+for directory in DIRECTORIES:
+    directory.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+
+# ============================================================
+# 4. REPRODUCIBILITY CONFIGURATION
+# ============================================================
+
+SEED = 42
+
+os.environ["PYTHONHASHSEED"] = str(SEED)
+
+random.seed(SEED)
+
+np.random.seed(SEED)
+
+tf.keras.utils.set_random_seed(SEED)
+
+try:
+    tf.config.experimental.enable_op_determinism()
+    DETERMINISTIC_OPERATIONS = True
+
+except Exception:
+    DETERMINISTIC_OPERATIONS = False
+
+
+# ============================================================
+# 5. LOGGING CONFIGURATION
+# ============================================================
+
+EXPERIMENT_ID = datetime.now().strftime(
+    "%Y%m%d_%H%M%S"
+)
+
+LOG_FILE = LOG_DIR / (
+    f"experiment_{EXPERIMENT_ID}.log"
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    handlers=[
+        logging.FileHandler(
+            LOG_FILE,
+            encoding="utf-8"
+        ),
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True
+)
+
+LOGGER = logging.getLogger("LeafDiseaseClassification")
+
+
+# ============================================================
+# 6. FRAMEWORK AND HARDWARE CONFIGURATION
+# ============================================================
+
+EXPECTED_TF_VERSION = "2.15.1"
+
+if tf.__version__ != EXPECTED_TF_VERSION:
+    LOGGER.warning(
+        "Expected TensorFlow %s, but detected TensorFlow %s.",
+        EXPECTED_TF_VERSION,
+        tf.__version__
+    )
+
+LOGGER.info("TensorFlow version: %s", tf.__version__)
+
+LOGGER.info("Keras version: %s", keras.__version__)
+
+LOGGER.info("Python version: %s", sys.version)
+
+LOGGER.info("Operating system: %s", platform.platform())
+
+
+# Detect available GPUs
+GPU_DEVICES = tf.config.list_physical_devices("GPU")
+
+CPU_DEVICES = tf.config.list_physical_devices("CPU")
+
+if GPU_DEVICES:
+
+    HARDWARE = "GPU"
+
+    for gpu in GPU_DEVICES:
+
+        try:
+            tf.config.experimental.set_memory_growth(
+                gpu,
+                True
+            )
+
+        except RuntimeError as error:
+
+            LOGGER.warning(
+                "Could not configure GPU memory growth: %s",
+                error
+            )
+
+else:
+
+    HARDWARE = "CPU"
+
+
+LOGGER.info("Execution hardware: %s", HARDWARE)
+
+LOGGER.info("Available GPU devices: %s", GPU_DEVICES)
+
+LOGGER.info("Available CPU devices: %s", CPU_DEVICES)
+
+
+# ============================================================
+# 7. DATASET CONFIGURATION
+# ============================================================
+
+DATASETS = {
+
+    "rice": {
+
+        "name": "Rice Leaf Disease",
+
+        "root": RICE_DIR,
+
+        "manifest": RICE_MANIFEST_PATH,
+
+        "enabled": True
+
+    },
+
+    "sugarcane": {
+
+        "name": "Sugarcane Leaf Disease",
+
+        "root": SUGARCANE_DIR,
+
+        "manifest": SUGARCANE_MANIFEST_PATH,
+
+        "enabled": True
+
+    }
+
+}
+
+
+# ============================================================
+# 8. IMAGE PREPROCESSING CONFIGURATION
+# ============================================================
+
+IMAGE_HEIGHT = 224
+
+IMAGE_WIDTH = 224
+
+IMAGE_CHANNELS = 3
+
+IMAGE_SIZE = (
+    IMAGE_HEIGHT,
+    IMAGE_WIDTH
+)
+
+IMAGE_SHAPE = (
+    IMAGE_HEIGHT,
+    IMAGE_WIDTH,
+    IMAGE_CHANNELS
+)
+
+IMAGE_COLOR_MODE = "RGB"
+
+SUPPORTED_IMAGE_EXTENSIONS = {
+
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp",
+    ".tif",
+    ".tiff",
+    ".webp"
+
+}
+
+
+# ============================================================
+# 9. TRAINING CONFIGURATION
+# ============================================================
+
+BATCH_SIZE = 16
+
+EPOCHS = 100
+
+LEARNING_RATE = 1e-4
+
+WEIGHT_DECAY = 1e-4
+
+VALIDATION_SPLIT = 0.15
+
+TEST_SPLIT = 0.15
+
+TRAIN_SPLIT = 1.0 - VALIDATION_SPLIT - TEST_SPLIT
+
+EARLY_STOPPING_PATIENCE = 15
+
+REDUCE_LR_PATIENCE = 5
+
+REDUCE_LR_FACTOR = 0.5
+
+MIN_LEARNING_RATE = 1e-7
+
+SHUFFLE_BUFFER_SIZE = 1000
+
+
+# ============================================================
+# 10. MODEL OPTIMIZATION CONFIGURATION
+# ============================================================
+
+OPTIMIZER_NAME = "AdamW"
+
+LOSS_FUNCTION = "sparse_categorical_crossentropy"
+
+MONITOR_METRIC = "val_loss"
+
+MONITOR_MODE = "min"
+
+USE_CLASS_WEIGHTS = True
+
+USE_EARLY_STOPPING = True
+
+USE_REDUCE_LR = True
+
+SAVE_BEST_MODEL = True
+
+
+# ============================================================
+# 11. PROPOSED MODEL AND BASELINE CONFIGURATION
+# ============================================================
+
+MODEL_CONFIGS = {
+
+    "CNN_MHA": {
+
+        "name": "Ours",
+
+        "architecture": "CNN + Multi-Head Attention",
+
+        "explainability": "Grad-CAM",
+
+        "is_proposed": True
+
+    },
+
+    "EfficientNetB5_GradCAM": {
+
+        "name": "Baseline 1",
+
+        "architecture": "EfficientNetB5",
+
+        "explainability": "Grad-CAM",
+
+        "is_proposed": False
+
+    },
+
+    "EfficientNetB5_LIME": {
+
+        "name": "Baseline 2",
+
+        "architecture": "EfficientNetB5",
+
+        "explainability": "LIME",
+
+        "is_proposed": False
+
+    },
+
+    "Four_Model_Ensemble_LIME": {
+
+        "name": "Baseline 3",
+
+        "architecture": (
+            "VGG16 + VGG19 + ResNet101V2 + InceptionV3"
+        ),
+
+        "explainability": "LIME",
+
+        "is_proposed": False
+
+    },
+
+    "ResNet9_SHAP": {
+
+        "name": "Baseline 4",
+
+        "architecture": "ResNet-9",
+
+        "explainability": "SHAP",
+
+        "is_proposed": False
+
+    }
+
+}
+
+
+MODEL_ORDER = [
+
+    "CNN_MHA",
+
+    "EfficientNetB5_GradCAM",
+
+    "EfficientNetB5_LIME",
+
+    "Four_Model_Ensemble_LIME",
+
+    "ResNet9_SHAP"
+
+]
+
+
+# ============================================================
+# 12. EVALUATION METRICS CONFIGURATION
+# ============================================================
+
+CLASSIFICATION_METRICS = [
+
+    "accuracy",
+
+    "precision_macro",
+
+    "recall_macro",
+
+    "f1_macro",
+
+    "specificity_macro",
+
+    "balanced_accuracy",
+
+    "auc_macro",
+
+    "mcc",
+
+    "cohen_kappa"
+
+]
+
+
+COMPUTATIONAL_METRICS = [
+
+    "training_time_seconds",
+
+    "inference_time_ms",
+
+    "trainable_parameters",
+
+    "non_trainable_parameters",
+
+    "total_parameters",
+
+    "model_size_mb"
+
+]
+
+
+EXPLAINABILITY_METRICS = [
+
+    "explanation_time_seconds",
+
+    "explanation_stability",
+
+    "explanation_fidelity"
+
+]
+
+
+# ============================================================
+# 13. EXPERIMENT RESULT CONTAINERS
+# ============================================================
+
+HISTORY = {}
+
+FINAL_METRICS = []
+
+CLASS_METRICS = []
+
+EXPERIMENT_LOGS = []
+
+PREDICTION_RESULTS = {}
+
+EXPLAINABILITY_RESULTS = {}
+
+CONFUSION_MATRICES = {}
+
+TRAINED_MODELS = {}
+
+DATASET_METADATA = {}
+
+DATASET_CLASS_NAMES = {}
+
+DATASET_CLASS_COUNTS = {}
+
+
+# ============================================================
+# 14. MODEL CHECKPOINT CONFIGURATION
+# ============================================================
+
+def get_model_checkpoint_path(
+    dataset_name,
+    model_name
+):
+
+    return CHECKPOINT_DIR / (
+        f"{dataset_name}_{model_name}.keras"
+    )
+
+
+def get_model_weights_path(
+    dataset_name,
+    model_name
+):
+
+    return CHECKPOINT_DIR / (
+        f"{dataset_name}_{model_name}.weights.h5"
+    )
+
+
+# ============================================================
+# 15. DATASET MANIFEST VALIDATION
+# ============================================================
+
+def validate_manifest_paths():
+
+    LOGGER.info("=" * 65)
+
+    LOGGER.info("DATASET MANIFEST VALIDATION")
+
+    LOGGER.info("=" * 65)
+
+    missing_manifests = []
+
+    for dataset_key, dataset_info in DATASETS.items():
+
+        if not dataset_info["enabled"]:
+            continue
+
+        manifest_path = dataset_info["manifest"]
+
+        LOGGER.info(
+            "%s manifest: %s",
+            dataset_info["name"],
+            manifest_path
+        )
+
+        if manifest_path.exists():
+
+            LOGGER.info(
+                "%s manifest exists: YES",
+                dataset_info["name"]
+            )
+
+        else:
+
+            LOGGER.error(
+                "%s manifest exists: NO",
+                dataset_info["name"]
+            )
+
+            missing_manifests.append(
+                str(manifest_path)
+            )
+
+    if missing_manifests:
+
+        raise FileNotFoundError(
+            "The following dataset manifests were not found:\n"
+            + "\n".join(missing_manifests)
+        )
+
+    LOGGER.info(
+        "Both dataset manifests were located successfully."
+    )
+
+
+# ============================================================
+# 16. READ MANIFEST JSON WITHOUT ASSUMING ITS SCHEMA
+# ============================================================
+
+def load_manifest_json(manifest_path):
+
+    manifest_path = Path(manifest_path)
+
+    with open(
+        manifest_path,
+        "r",
+        encoding="utf-8-sig"
+    ) as file:
+
+        manifest_data = json.load(file)
+
+    if not isinstance(manifest_data, (dict, list)):
+
+        raise ValueError(
+            f"Unexpected JSON root structure in {manifest_path}"
+        )
+
+    return manifest_data
+
+
+def load_dataset_manifests():
+
+    manifests = {}
+
+    for dataset_key, dataset_info in DATASETS.items():
+
+        if not dataset_info["enabled"]:
+            continue
+
+        manifest_path = dataset_info["manifest"]
+
+        manifests[dataset_key] = load_manifest_json(
+            manifest_path
+        )
+
+        LOGGER.info(
+            "%s manifest loaded successfully.",
+            dataset_info["name"]
+        )
+
+        LOGGER.info(
+            "Manifest root type: %s",
+            type(manifests[dataset_key]).__name__
+        )
+
+    return manifests
+
+
+# ============================================================
+# 17. BASIC CONFIGURATION VALIDATION
+# ============================================================
+
+def validate_configuration():
+
+    assert PROJECT_DIR.exists(), (
+        f"Project directory does not exist: {PROJECT_DIR}"
+    )
+
+    assert IMAGE_CHANNELS == 3, (
+        "This experiment requires RGB images."
+    )
+
+    assert abs(
+        TRAIN_SPLIT + VALIDATION_SPLIT + TEST_SPLIT - 1.0
+    ) < 1e-9, (
+        "Training, validation and testing ratios must sum to 1."
+    )
+
+    assert len(MODEL_CONFIGS) == 5, (
+        "Expected one proposed model and four baselines."
+    )
+
+    assert len(MODEL_ORDER) == 5, (
+        "MODEL_ORDER must contain five configurations."
+    )
+
+    assert set(MODEL_ORDER) == set(MODEL_CONFIGS.keys()), (
+        "MODEL_ORDER and MODEL_CONFIGS do not match."
+    )
+
+    assert BATCH_SIZE > 0
+
+    assert EPOCHS > 0
+
+    assert LEARNING_RATE > 0
+
+    LOGGER.info(
+        "Configuration validation completed successfully."
+    )
+
+
+# ============================================================
+# 18. PRINT EXPERIMENT CONFIGURATION
+# ============================================================
+
+def print_experiment_configuration():
+
+    print("\n" + "=" * 75)
+
+    print("RICE AND SUGARCANE DISEASE CLASSIFICATION")
+
+    print("=" * 75)
+
+    print("\nPROJECT INFORMATION")
+
+    print("-" * 75)
+
+    print("Project directory:", PROJECT_DIR)
+
+    print("Experiment ID:", EXPERIMENT_ID)
+
+    print("Python:", sys.version.split()[0])
+
+    print("TensorFlow:", tf.__version__)
+
+    print("Keras:", keras.__version__)
+
+    print("Hardware:", HARDWARE)
+
+    print("Deterministic operations:", DETERMINISTIC_OPERATIONS)
+
+    print("\nDATASETS")
+
+    print("-" * 75)
+
+    for dataset_key, dataset_info in DATASETS.items():
+
+        print("\nDataset:", dataset_info["name"])
+
+        print("Root:", dataset_info["root"])
+
+        print("Manifest:", dataset_info["manifest"])
+
+        print("Manifest exists:", dataset_info["manifest"].exists())
+
+    print("\nIMAGE CONFIGURATION")
+
+    print("-" * 75)
+
+    print("Image dimensions:", IMAGE_SIZE)
+
+    print("Image channels:", IMAGE_CHANNELS)
+
+    print("Color mode:", IMAGE_COLOR_MODE)
+
+    print("\nTRAINING CONFIGURATION")
+
+    print("-" * 75)
+
+    print("Batch size:", BATCH_SIZE)
+
+    print("Epochs:", EPOCHS)
+
+    print("Learning rate:", LEARNING_RATE)
+
+    print("Weight decay:", WEIGHT_DECAY)
+
+    print("Optimizer:", OPTIMIZER_NAME)
+
+    print(
+        "Train / validation / test:",
+        f"{TRAIN_SPLIT:.0%} /",
+        f"{VALIDATION_SPLIT:.0%} /",
+        f"{TEST_SPLIT:.0%}"
+    )
+
+    print("\nPROPOSED MODEL AND BASELINES")
+
+    print("-" * 75)
+
+    for model_key in MODEL_ORDER:
+
+        model_info = MODEL_CONFIGS[model_key]
+
+        print(
+            f"{model_info['name']}: "
+            f"{model_info['architecture']} "
+            f"| Explanation: {model_info['explainability']}"
+        )
+
+    print("\nOUTPUT DIRECTORIES")
+
+    print("-" * 75)
+
+    print("Models:", MODEL_DIR)
+
+    print("Figures:", FIGURE_DIR)
+
+    print("Tables:", TABLE_DIR)
+
+    print("Logs:", LOG_DIR)
+
+    print("Explainability:", EXPLAINABILITY_DIR)
+
+    print("\n" + "=" * 75)
+
+    print("BLOCK 1 CONFIGURATION COMPLETED")
+
+    print("=" * 75)
+
+
+# ============================================================
+# 19. EXECUTE BLOCK 1 INITIALIZATION
+# ============================================================
+
+if __name__ == "__main__":
+
+    validate_configuration()
+
+    validate_manifest_paths()
+
+    # Read the two JSON manifests without assuming their schema.
+    # Block 2 will inspect their actual structure.
+
+    DATASET_MANIFESTS = load_dataset_manifests()
+
+    print_experiment_configuration()
+
+    LOGGER.info(
+        "BLOCK 1 INITIALIZATION COMPLETED SUCCESSFULLY."
+    )
+
+# ============================================================
+# END OF BLOCK 1
+# ============================================================
+
+
+
+# ============================================================
+# RICE AND SUGARCANE LEAF DISEASE CLASSIFICATION
+# BLOCK 2: MANIFEST INSPECTION AND DATASET PREPARATION
+#
+# Framework: TensorFlow 2.15.1 / Keras
+#
+# Objectives:
+# 1. Inspect both dataset manifests.
+# 2. Identify the manifest structure.
+# 3. Extract image paths and disease labels.
+# 4. Validate image availability.
+# 5. Generate dataset metadata.
+# 6. Prepare stratified train/validation/test splits.
+# 7. Create TensorFlow datasets.
+#
+# IMPORTANT:
+# This block does not assume the manifest schema.
+# ============================================================
+
+
+# ============================================================
+# 1. IMPORT BLOCK 2 DEPENDENCIES
+# ============================================================
+
+from collections import Counter, defaultdict
+
+from sklearn.model_selection import train_test_split
+
+import tensorflow as tf
+import numpy as np
+import pandas as pd
+
+from PIL import Image, UnidentifiedImageError
+
+
+# ============================================================
+# 2. MANIFEST INSPECTION SETTINGS
+# ============================================================
+
+MANIFEST_PREVIEW_ITEMS = 5
+
+MAX_MANIFEST_PREVIEW_CHARS = 12000
+
+VALID_IMAGE_EXTENSIONS = {
+
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp",
+    ".tif",
+    ".tiff",
+    ".webp"
+
+}
+
+# Image validation settings
+VERIFY_IMAGE_FILES = True
+
+SKIP_CORRUPTED_IMAGES = True
+
+# Dataset splitting
+STRATIFIED_SPLITTING = True
+
+# Cache and performance
+USE_TF_DATA_CACHE = False
+
+USE_TF_PREFETCH = True
+
+
+# ============================================================
+# 3. DISPLAY MANIFEST STRUCTURE
+# ============================================================
+
+def inspect_json_structure(
+    obj,
+    level=0,
+    max_level=5
+):
+
+    indentation = "  " * level
+
+    if level > max_level:
+
+        return indentation + "Maximum inspection depth reached"
+
+    if isinstance(obj, dict):
+
+        output = []
+
+        output.append(
+            indentation + f"Dictionary with {len(obj)} keys"
+        )
+
+        for key, value in list(obj.items())[:20]:
+
+            output.append(
+                indentation + f"- {repr(key)}: "
+                f"{type(value).__name__}"
+            )
+
+            if isinstance(value, (dict, list)):
+
+                output.append(
+                    inspect_json_structure(
+                        value,
+                        level + 1,
+                        max_level
+                    )
+                )
+
+            elif isinstance(value, str):
+
+                output.append(
+                    indentation + "  Value preview: "
+                    + repr(value[:150])
+                )
+
+        return "\n".join(output)
+
+    elif isinstance(obj, list):
+
+        output = []
+
+        output.append(
+            indentation + f"List with {len(obj)} elements"
+        )
+
+        for index, value in enumerate(
+            obj[:MANIFEST_PREVIEW_ITEMS]
+        ):
+
+            output.append(
+                indentation + f"- Element {index}: "
+                f"{type(value).__name__}"
+            )
+
+            if isinstance(value, (dict, list)):
+
+                output.append(
+                    inspect_json_structure(
+                        value,
+                        level + 1,
+                        max_level
+                    )
+                )
+
+            else:
+
+                output.append(
+                    indentation + "  Value: "
+                    + repr(value)[:200]
+                )
+
+        return "\n".join(output)
+
+    else:
+
+        return (
+            indentation
+            + f"Value type: {type(obj).__name__}"
+        )
+
+
+# ============================================================
+# 4. INSPECT RICE AND SUGARCANE MANIFESTS
+# ============================================================
+
+def inspect_all_manifests(manifests):
+
+    print("\n" + "=" * 80)
+
+    print("DATASET MANIFEST STRUCTURE INSPECTION")
+
+    print("=" * 80)
+
+    for dataset_name, manifest in manifests.items():
+
+        print("\nDATASET:", dataset_name.upper())
+
+        print("-" * 80)
+
+        print(
+            inspect_json_structure(
+                manifest
+            )
+        )
+
+        # Show a formatted JSON preview
+        print("\nJSON CONTENT PREVIEW")
+
+        print("-" * 80)
+
+        preview = json.dumps(
+            manifest,
+            indent=2,
+            ensure_ascii=False,
+            default=str
+        )
+
+        print(
+            preview[:MAX_MANIFEST_PREVIEW_CHARS]
+        )
+
+        if len(preview) > MAX_MANIFEST_PREVIEW_CHARS:
+
+            print("\n... JSON preview truncated ...")
+
+        print("\n")
+
+
+# ============================================================
+# 5. GENERIC IMAGE FILE DISCOVERY
+# ============================================================
+
+def discover_images_from_directory(
+    dataset_root
+):
+
+    dataset_root = Path(dataset_root)
+
+    discovered = []
+
+    if not dataset_root.exists():
+
+        LOGGER.warning(
+            "Dataset directory does not exist: %s",
+            dataset_root
+        )
+
+        return discovered
+
+    for file_path in dataset_root.rglob("*"):
+
+        if not file_path.is_file():
+
+            continue
+
+        if file_path.suffix.lower() not in VALID_IMAGE_EXTENSIONS:
+
+            continue
+
+        # Exclude files inside common non-image output folders
+        excluded_parts = {
+
+            "models",
+            "results",
+            "checkpoints",
+            "cache",
+            "__pycache__"
+
+        }
+
+        if any(
+            part.lower() in excluded_parts
+            for part in file_path.parts
+        ):
+
+            continue
+
+        discovered.append(
+            file_path.resolve()
+        )
+
+    return sorted(
+        set(discovered)
+    )
+
+
+# ============================================================
+# 6. EXTRACT RECORDS FROM COMMON MANIFEST STRUCTURES
+# ============================================================
+
+# This function supports common JSON record layouts.
+# It does not silently guess arbitrary field names.
+
+IMAGE_FIELD_CANDIDATES = [
+
+    "image_path",
+    "image",
+    "filepath",
+    "file_path",
+    "path",
+    "filename",
+    "file"
+
+]
+
+LABEL_FIELD_CANDIDATES = [
+
+    "label",
+    "class",
+    "class_name",
+    "disease",
+    "category",
+    "disease_name"
+
+]
+
+
+def find_candidate_field(
+    record,
+    candidates
+):
+
+    if not isinstance(record, dict):
+
+        return None
+
+    normalized = {
+
+        str(key).strip().lower(): key
+
+        for key in record.keys()
+
+    }
+
+    for candidate in candidates:
+
+        if candidate in normalized:
+
+            return normalized[candidate]
+
+    return None
+
+
+def extract_records_from_manifest(
+    manifest
+):
+
+    records = []
+
+    if isinstance(manifest, list):
+
+        records = [
+
+            item
+
+            for item in manifest
+
+            if isinstance(item, dict)
+
+        ]
+
+    elif isinstance(manifest, dict):
+
+        # Look for common record collections
+        collection_candidates = [
+
+            "images",
+            "samples",
+            "records",
+            "data",
+            "files",
+            "annotations",
+            "items"
+
+        ]
+
+        normalized_keys = {
+
+            str(key).strip().lower(): key
+
+            for key in manifest.keys()
+
+        }
+
+        for candidate in collection_candidates:
+
+            if candidate in normalized_keys:
+
+                collection = manifest[
+                    normalized_keys[candidate]
+                ]
+
+                if isinstance(collection, list):
+
+                    records = [
+
+                        item
+
+                        for item in collection
+
+                        if isinstance(item, dict)
+
+                    ]
+
+                    break
+
+        # If no known collection is found,
+        # check whether the root itself is a single image record.
+        if not records:
+
+            image_field = find_candidate_field(
+                manifest,
+                IMAGE_FIELD_CANDIDATES
+            )
+
+            label_field = find_candidate_field(
+                manifest,
+                LABEL_FIELD_CANDIDATES
+            )
+
+            if image_field and label_field:
+
+                records = [manifest]
+
+    return records
+
+
+# ============================================================
+# 7. RESOLVE IMAGE PATHS
+# ============================================================
+
+def resolve_image_path(
+    image_value,
+    dataset_root
+):
+
+    if image_value is None:
+
+        return None
+
+    image_path = Path(
+        str(image_value).strip()
+    )
+
+    if image_path.is_absolute():
+
+        candidates = [image_path]
+
+    else:
+
+        candidates = [
+
+            dataset_root / image_path,
+
+            dataset_root / "images" / image_path,
+
+            PROJECT_DIR / image_path,
+
+            PROJECT_DIR / "data" / image_path
+
+        ]
+
+    for candidate in candidates:
+
+        if candidate.exists() and candidate.is_file():
+
+            if candidate.suffix.lower() in VALID_IMAGE_EXTENSIONS:
+
+                return candidate.resolve()
+
+    return None
+
+
+# ============================================================
+# 8. CONVERT MANIFEST RECORDS INTO DATAFRAME
+# ============================================================
+
+def manifest_to_dataframe(
+    dataset_name,
+    manifest,
+    dataset_root
+):
+
+    records = extract_records_from_manifest(
+        manifest
+    )
+
+    if not records:
+
+        return pd.DataFrame(
+            columns=[
+                "dataset",
+                "image_path",
+                "label"
+            ]
+        )
+
+    extracted = []
+
+    for record in records:
+
+        image_field = find_candidate_field(
+            record,
+            IMAGE_FIELD_CANDIDATES
+        )
+
+        label_field = find_candidate_field(
+            record,
+            LABEL_FIELD_CANDIDATES
+        )
+
+        if image_field is None or label_field is None:
+
+            continue
+
+        image_path = resolve_image_path(
+            record[image_field],
+            dataset_root
+        )
+
+        label = record[label_field]
+
+        if image_path is None or label is None:
+
+            continue
+
+        extracted.append({
+
+            "dataset": dataset_name,
+
+            "image_path": str(image_path),
+
+            "label": str(label).strip()
+
+        })
+
+    return pd.DataFrame(
+        extracted,
+        columns=[
+            "dataset",
+            "image_path",
+            "label"
+        ]
+    )
+
+
+# ============================================================
+# 9. VALIDATE IMAGE FILES
+# ============================================================
+
+def validate_image_file(
+    image_path
+):
+
+    try:
+
+        with Image.open(image_path) as image:
+
+            image.verify()
+
+        return True
+
+    except (
+        UnidentifiedImageError,
+        OSError,
+        ValueError
+    ):
+
+        return False
+
+
+def validate_dataframe_images(
+    dataframe,
+    dataset_name
+):
+
+    if dataframe.empty:
+
+        return dataframe
+
+    if not VERIFY_IMAGE_FILES:
+
+        return dataframe
+
+    print(
+        f"\nValidating images for {dataset_name}..."
+    )
+
+    valid_mask = dataframe["image_path"].apply(
+        validate_image_file
+    )
+
+    valid_count = int(
+        valid_mask.sum()
+    )
+
+    invalid_count = int(
+        (~valid_mask).sum()
+    )
+
+    print(
+        f"Valid images: {valid_count}"
+    )
+
+    print(
+        f"Invalid images: {invalid_count}"
+    )
+
+    if invalid_count > 0:
+
+        LOGGER.warning(
+            "%s contains %d invalid image files.",
+            dataset_name,
+            invalid_count
+        )
+
+        if SKIP_CORRUPTED_IMAGES:
+
+            dataframe = dataframe.loc[
+                valid_mask
+            ].copy()
+
+    return dataframe.reset_index(
+        drop=True
+    )
+
+
+# ============================================================
+# 10. FALLBACK DIRECTORY-BASED DATASET DISCOVERY
+# ============================================================
+
+# This fallback is used only if the manifest cannot be
+# converted into image records.
+#
+# Expected conventional structure:
+#
+# rice/
+#     Disease_A/
+#         image1.jpg
+#         image2.jpg
+#     Disease_B/
+#         image3.jpg
+#
+# The class name is taken from the immediate parent folder.
+# No class names are hardcoded.
+
+
+def dataframe_from_directory(
+    dataset_name,
+    dataset_root
+):
+
+    discovered_images = discover_images_from_directory(
+        dataset_root
+    )
+
+    records = []
+
+    for image_path in discovered_images:
+
+        relative_path = image_path.relative_to(
+            dataset_root.resolve()
+        )
+
+        if len(relative_path.parts) < 2:
+
+            continue
+
+        class_name = relative_path.parts[0]
+
+        records.append({
+
+            "dataset": dataset_name,
+
+            "image_path": str(image_path),
+
+            "label": str(class_name)
+
+        })
+
+    return pd.DataFrame(
+        records,
+        columns=[
+            "dataset",
+            "image_path",
+            "label"
+        ]
+    )
+
+
+# ============================================================
+# 11. BUILD DATAFRAME FOR EACH DATASET
+# ============================================================
+
+def build_dataset_dataframes(
+    manifests
+):
+
+    dataset_dataframes = {}
+
+    for dataset_name, dataset_info in DATASETS.items():
+
+        if not dataset_info["enabled"]:
+
+            continue
+
+        print("\n" + "=" * 75)
+
+        print(
+            "PREPARING:",
+            dataset_info["name"].upper()
+        )
+
+        print("=" * 75)
+
+        manifest = manifests[dataset_name]
+
+        dataframe = manifest_to_dataframe(
+
+            dataset_name=dataset_name,
+
+            manifest=manifest,
+
+            dataset_root=dataset_info["root"]
+
+        )
+
+        if dataframe.empty:
+
+            LOGGER.warning(
+                "No usable image records extracted from %s manifest.",
+                dataset_name
+            )
+
+            print(
+                "Trying directory-based discovery."
+            )
+
+            dataframe = dataframe_from_directory(
+
+                dataset_name=dataset_name,
+
+                dataset_root=dataset_info["root"]
+
+            )
+
+        dataframe = validate_dataframe_images(
+
+            dataframe=dataframe,
+
+            dataset_name=dataset_name
+
+        )
+
+        dataframe = dataframe.drop_duplicates(
+            subset=["image_path"]
+        ).reset_index(
+            drop=True
+        )
+
+        dataset_dataframes[dataset_name] = dataframe
+
+        print(
+            "Usable images:",
+            len(dataframe)
+        )
+
+        print(
+            "Number of classes:",
+            dataframe["label"].nunique()
+            if not dataframe.empty else 0
+        )
+
+        if not dataframe.empty:
+
+            print("\nClass distribution:")
+
+            print(
+                dataframe["label"].value_counts().to_string()
+            )
+
+    return dataset_dataframes
+
+
+# ============================================================
+# 12. DATASET METADATA GENERATION
+# ============================================================
+
+def generate_dataset_metadata(
+    dataset_dataframes
+):
+
+    metadata = {}
+
+    class_names = {}
+
+    class_counts = {}
+
+    for dataset_name, dataframe in dataset_dataframes.items():
+
+        if dataframe.empty:
+
+            LOGGER.warning(
+                "%s has no usable images.",
+                dataset_name
+            )
+
+            continue
+
+        counts = dataframe["label"].value_counts()
+
+        classes = sorted(
+            dataframe["label"].unique().tolist()
+        )
+
+        metadata[dataset_name] = {
+
+            "total_images": int(len(dataframe)),
+
+            "number_of_classes": int(len(classes)),
+
+            "class_distribution": {
+
+                str(key): int(value)
+
+                for key, value in counts.items()
+
+            },
+
+            "image_dimensions": IMAGE_SIZE,
+
+            "color_mode": IMAGE_COLOR_MODE
+
+        }
+
+        class_names[dataset_name] = classes
+
+        class_counts[dataset_name] = counts.to_dict()
+
+    DATASET_METADATA.update(metadata)
+
+    DATASET_CLASS_NAMES.update(class_names)
+
+    DATASET_CLASS_COUNTS.update(class_counts)
+
+    metadata_path = TABLE_DIR / (
+        "dataset_metadata.json"
+    )
+
+    with open(
+        metadata_path,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            metadata,
+            file,
+            indent=4,
+            ensure_ascii=False
+        )
+
+    print(
+        "\nDataset metadata saved to:",
+        metadata_path
+    )
+
+    return metadata
+
+
+# ============================================================
+# 13. STRATIFIED DATASET SPLITTING
+# ============================================================
+
+def split_dataset_dataframe(
+    dataframe,
+    dataset_name
+):
+
+    if dataframe.empty:
+
+        raise ValueError(
+            f"{dataset_name} dataframe is empty."
+        )
+
+    class_counts = dataframe["label"].value_counts()
+
+    if len(class_counts) < 2:
+
+        raise ValueError(
+            f"{dataset_name} requires at least two classes."
+        )
+
+    if STRATIFIED_SPLITTING:
+
+        if class_counts.min() < 3:
+
+            raise ValueError(
+                f"{dataset_name} has a class with fewer than "
+                "three images. A stratified 70/15/15 split "
+                "cannot be reliably created. Inspect the "
+                "dataset before changing the split strategy."
+            )
+
+        train_df, temporary_df = train_test_split(
+
+            dataframe,
+
+            test_size=(VALIDATION_SPLIT + TEST_SPLIT),
+
+            random_state=SEED,
+
+            stratify=dataframe["label"]
+
+        )
+
+        relative_test_size = (
+            TEST_SPLIT /
+            (VALIDATION_SPLIT + TEST_SPLIT)
+        )
+
+        validation_df, test_df = train_test_split(
+
+            temporary_df,
+
+            test_size=relative_test_size,
+
+            random_state=SEED,
+
+            stratify=temporary_df["label"]
+
+        )
+
+    else:
+
+        train_df, temporary_df = train_test_split(
+
+            dataframe,
+
+            test_size=(VALIDATION_SPLIT + TEST_SPLIT),
+
+            random_state=SEED
+
+        )
+
+        relative_test_size = (
+            TEST_SPLIT /
+            (VALIDATION_SPLIT + TEST_SPLIT)
+        )
+
+        validation_df, test_df = train_test_split(
+
+            temporary_df,
+
+            test_size=relative_test_size,
+
+            random_state=SEED
+
+        )
+
+    train_df = train_df.reset_index(drop=True)
+
+    validation_df = validation_df.reset_index(drop=True)
+
+    test_df = test_df.reset_index(drop=True)
+
+    print(
+        f"\n{dataset_name.upper()} SPLIT SUMMARY"
+    )
+
+    print("-" * 60)
+
+    print(
+        f"Training:   {len(train_df):6d} "
+        f"({len(train_df) / len(dataframe):.2%})"
+    )
+
+    print(
+        f"Validation: {len(validation_df):6d} "
+        f"({len(validation_df) / len(dataframe):.2%})"
+    )
+
+    print(
+        f"Testing:    {len(test_df):6d} "
+        f"({len(test_df) / len(dataframe):.2%})"
+    )
+
+    return {
+
+        "train": train_df,
+
+        "validation": validation_df,
+
+        "test": test_df
+
+    }
+
+
+# ============================================================
+# 14. CREATE TENSORFLOW IMAGE LOADING FUNCTION
+# ============================================================
+
+def load_and_preprocess_image(
+    image_path,
+    label,
+    num_classes=None
+):
+
+    image_bytes = tf.io.read_file(
+        image_path
+    )
+
+    image = tf.io.decode_image(
+
+        image_bytes,
+
+        channels=IMAGE_CHANNELS,
+
+        expand_animations=False
+
+    )
+
+    image.set_shape([
+        None,
+        None,
+        IMAGE_CHANNELS
+    ])
+
+    image = tf.image.resize(
+
+        image,
+
+        IMAGE_SIZE,
+
+        method="bilinear"
+
+    )
+
+    image = tf.cast(
+        image,
+        tf.float32
+    )
+
+    # Keep pixel values in [0, 255].
+    # Architecture-specific preprocessing will be
+    # applied inside each model's preprocessing pipeline.
+
+    return image, label
+
+
+# ============================================================
+# 15. CREATE TENSORFLOW DATASET
+# ============================================================
+
+def create_tf_dataset(
+    dataframe,
+    batch_size=BATCH_SIZE,
+    training=False
+):
+
+    if dataframe.empty:
+
+        raise ValueError(
+            "Cannot create TensorFlow dataset from an empty dataframe."
+        )
+
+    image_paths = dataframe[
+        "image_path"
+    ].astype(str).to_numpy()
+
+    labels = dataframe[
+        "encoded_label"
+    ].astype(np.int32).to_numpy()
+
+    dataset = tf.data.Dataset.from_tensor_slices(
+        (image_paths, labels)
+    )
+
+    if training:
+
+        dataset = dataset.shuffle(
+
+            buffer_size=max(
+                len(dataframe),
+                1
+            ),
+
+            seed=SEED,
+
+            reshuffle_each_iteration=True
+
+        )
+
+    dataset = dataset.map(
+
+        load_and_preprocess_image,
+
+        num_parallel_calls=tf.data.AUTOTUNE
+
+    )
+
+    if USE_TF_DATA_CACHE:
+
+        dataset = dataset.cache()
+
+    dataset = dataset.batch(
+        batch_size
+    )
+
+    if USE_TF_PREFETCH:
+
+        dataset = dataset.prefetch(
+            tf.data.AUTOTUNE
+        )
+
+    return dataset
+
+
+# ============================================================
+# 16. ENCODE LABELS AND CREATE DATA SPLITS
+# ============================================================
+
+def prepare_dataset_splits(
+    dataset_dataframes
+):
+
+    prepared_datasets = {}
+
+    for dataset_name, dataframe in dataset_dataframes.items():
+
+        if dataframe.empty:
+
+            continue
+
+        print("\n" + "=" * 75)
+
+        print(
+            "ENCODING AND SPLITTING:",
+            dataset_name.upper()
+        )
+
+        print("=" * 75)
+
+        classes = sorted(
+            dataframe["label"].unique().tolist()
+        )
+
+        label_to_index = {
+
+            label: index
+
+            for index, label in enumerate(classes)
+
+        }
+
+        dataframe = dataframe.copy()
+
+        dataframe["encoded_label"] = (
+            dataframe["label"].map(label_to_index)
+        )
+
+        splits = split_dataset_dataframe(
+
+            dataframe=dataframe,
+
+            dataset_name=dataset_name
+
+        )
+
+        # Save label mapping for reproducibility
+        label_mapping = {
+
+            str(label): int(index)
+
+            for label, index in label_to_index.items()
+
+        }
+
+        mapping_path = TABLE_DIR / (
+            f"{dataset_name}_label_mapping.json"
+        )
+
+        with open(
+            mapping_path,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            json.dump(
+                label_mapping,
+                file,
+                indent=4,
+                ensure_ascii=False
+            )
+
+        # Construct TensorFlow datasets
+        train_tf = create_tf_dataset(
+
+            splits["train"],
+
+            training=True
+
+        )
+
+        validation_tf = create_tf_dataset(
+
+            splits["validation"],
+
+            training=False
+
+        )
+
+        test_tf = create_tf_dataset(
+
+            splits["test"],
+
+            training=False
+
+        )
+
+        prepared_datasets[dataset_name] = {
+
+            "classes": classes,
+
+            "label_to_index": label_to_index,
+
+            "num_classes": len(classes),
+
+            "train_dataframe": splits["train"],
+
+            "validation_dataframe": splits["validation"],
+
+            "test_dataframe": splits["test"],
+
+            "train": train_tf,
+
+            "validation": validation_tf,
+
+            "test": test_tf
+
+        }
+
+        print(
+            "Number of classes:",
+            len(classes)
+        )
+
+        print(
+            "Class mapping:",
+            label_mapping
+        )
+
+        print(
+            "TensorFlow datasets created successfully."
+        )
+
+    return prepared_datasets
+
+
+# ============================================================
+# 17. EXECUTE BLOCK 2
+# ============================================================
+
+def execute_block_2():
+
+    print("\n" + "=" * 80)
+
+    print("BLOCK 2: DATASET INSPECTION AND PREPARATION")
+
+    print("=" * 80)
+
+    # Step 1: Inspect both actual manifest structures
+    inspect_all_manifests(
+        DATASET_MANIFESTS
+    )
+
+    # Step 2: Build dataframes from manifest records
+    dataset_dataframes = build_dataset_dataframes(
+        DATASET_MANIFESTS
+    )
+
+    # Step 3: Generate metadata
+    metadata = generate_dataset_metadata(
+        dataset_dataframes
+    )
+
+    # Step 4: Stop if either dataset could not be identified
+    for dataset_name in DATASETS:
+
+        if DATASETS[dataset_name]["enabled"]:
+
+            if (
+                dataset_name not in dataset_dataframes
+                or dataset_dataframes[dataset_name].empty
+            ):
+
+                raise RuntimeError(
+
+                    f"No usable images were identified for "
+                    f"{dataset_name}. Inspect the manifest "
+                    "structure printed above. Do not proceed "
+                    "until its image-path and label fields "
+                    "are correctly mapped."
+
+                )
+
+    # Step 5: Prepare splits and TensorFlow datasets
+    prepared_datasets = prepare_dataset_splits(
+        dataset_dataframes
+    )
+
+    print("\n" + "=" * 80)
+
+    print("BLOCK 2 EXECUTION SUMMARY")
+
+    print("=" * 80)
+
+    for dataset_name, data in prepared_datasets.items():
+
+        print(
+            f"\n{dataset_name.upper()}"
+        )
+
+        print(
+            "Classes:",
+            data["num_classes"]
+        )
+
+        print(
+            "Training images:",
+            len(data["train_dataframe"])
+        )
+
+        print(
+            "Validation images:",
+            len(data["validation_dataframe"])
+        )
+
+        print(
+            "Testing images:",
+            len(data["test_dataframe"])
+        )
+
+        for batch_images, batch_labels in data["train"].take(1):
+
+            print(
+                "Training image batch shape:",
+                batch_images.shape
+            )
+
+            print(
+                "Training label batch shape:",
+                batch_labels.shape
+            )
+
+    print("\nBLOCK 2 COMPLETED")
+
+    return prepared_datasets
+
+
+# Execute Block 2
+PREPARED_DATASETS = execute_block_2()
+
+
+# ============================================================
+# END OF BLOCK 2
+# ============================================================
+
+
+
+
+from pathlib import Path
+
+#code = r'''# ============================================================
+# RICE AND SUGARCANE LEAF DISEASE CLASSIFICATION
+# BLOCKS 3-8: MODEL BUILDING, TRAINING, EVALUATION & XAI
+#
+# Run Blocks 1 and 2 first, in the SAME Python session.
+# This continuation uses the globals created by those blocks.
+#
+# Models:
+#   Ours: CNN + Multi-Head Attention
+#   B1/B2: one EfficientNetB5 classifier, evaluated with
+#         Grad-CAM and LIME respectively
+#   B3: probability ensemble of VGG16, VGG19,
+#       ResNet101V2 and InceptionV3, explained with LIME
+#   B4: ResNet-9, explained with SHAP
+#
+# IMPORTANT:
+#   B1 and B2 have the same architecture and training data.
+#   They are therefore one classifier with two explanation
+#   methods, not two independent classification baselines.
+#   The code trains EfficientNetB5 once and reports its
+#   classification metrics under both experiment labels.
+# ============================================================
+
+import os
+import time
+import json
+import math
+import warnings
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix, classification_report, roc_auc_score,
+    matthews_corrcoef, cohen_kappa_score, balanced_accuracy_score,
+    roc_curve, auc
+)
+from sklearn.preprocessing import label_binarize
+from sklearn.utils.class_weight import compute_class_weight
+
+warnings.filterwarnings("ignore", category=UserWarning)
+
+# ------------------------------------------------------------
+# BLOCK 3. EXPERIMENT SETTINGS AND VALIDATION
+# ------------------------------------------------------------
+
+# You may reduce these for a first smoke test.
+FINE_TUNE_APPLICATIONS = True
+APPLICATION_FINE_TUNE_LAYERS = 30
+EXPLAINABILITY_SAMPLE_COUNT = 12
+LIME_NUM_SAMPLES = 500
+SHAP_BACKGROUND_COUNT = 20
+SHAP_EXPLANATION_COUNT = 5
+SAVE_PREDICTIONS = True
+
+# For resource-constrained GPUs, begin with BATCH_SIZE=8 or 16.
+# EfficientNetB5 and the four-network ensemble can be demanding.
+
+REQUIRED_GLOBALS = [
+    "PREPARED_DATASETS", "MODEL_DIR", "RESULTS_DIR",
+    "CHECKPOINT_DIR", "FIGURE_DIR", "TABLE_DIR",
+    "GRADCAM_DIR", "LIME_DIR", "SHAP_DIR",
+    "MODEL_ORDER", "SEED", "EPOCHS", "BATCH_SIZE",
+    "LEARNING_RATE", "EARLY_STOPPING_PATIENCE"
+]
+_missing = [name for name in REQUIRED_GLOBALS if name not in globals()]
+if _missing:
+    raise RuntimeError(
+        "Run Blocks 1 and 2 first. Missing globals: " + ", ".join(_missing)
+    )
+
+for _name in ["MODEL_DIR", "RESULTS_DIR", "CHECKPOINT_DIR",
+              "FIGURE_DIR", "TABLE_DIR", "GRADCAM_DIR",
+              "LIME_DIR", "SHAP_DIR"]:
+    Path(globals()[_name]).mkdir(parents=True, exist_ok=True)
+
+np.random.seed(SEED)
+tf.keras.utils.set_random_seed(SEED)
+
+# A separate registry avoids overwriting Block 1 containers.
+MODEL_REGISTRY = {}
+TRAINING_RECORDS = []
+EVALUATION_RECORDS = []
+PREDICTION_RECORDS = {}
+EXPLANATION_RECORDS = {}
+
+# ------------------------------------------------------------
+# BLOCK 3A. SHARED MODEL UTILITIES
+# ------------------------------------------------------------
+
+def make_augmentation():
+    """Consistent, mild augmentation for training only."""
+    return tf.keras.Sequential([
+        tf.keras.layers.RandomFlip("horizontal"),
+        tf.keras.layers.RandomRotation(0.08),
+        tf.keras.layers.RandomZoom(0.10),
+        tf.keras.layers.RandomContrast(0.10),
+    ], name="training_augmentation")
+
+
+def make_optimizer():
+    """Use AdamW where available; fall back to Adam."""
+    try:
+        return tf.keras.optimizers.AdamW(
+            learning_rate=LEARNING_RATE,
+            weight_decay=WEIGHT_DECAY
+        )
+    except Exception:
+        return tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+
+
+def make_class_weights(train_dataframe, num_classes):
+    labels = train_dataframe["encoded_label"].astype(int).to_numpy()
+    present = np.unique(labels)
+    weights = compute_class_weight(
+        class_weight="balanced", classes=present, y=labels
+    )
+    return {int(c): float(w) for c, w in zip(present, weights)}
+
+
+def compile_classifier(model):
+    model.compile(
+        optimizer=make_optimizer(),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"]
+    )
+    return model
+
+
+def count_parameters(model):
+    trainable = int(np.sum([tf.keras.backend.count_params(w)
+                            for w in model.trainable_weights]))
+    non_trainable = int(np.sum([tf.keras.backend.count_params(w)
+                                for w in model.non_trainable_weights]))
+    return trainable, non_trainable, trainable + non_trainable
+
+
+def model_file(dataset_name, model_key):
+    return Path(CHECKPOINT_DIR) / f"{dataset_name}_{model_key}.keras"
+
+
+def callbacks_for(dataset_name, model_key):
+    path = model_file(dataset_name, model_key)
+    callbacks = [
+        tf.keras.callbacks.ModelCheckpoint(
+            filepath=str(path),
+            monitor="val_loss",
+            mode="min",
+            save_best_only=True,
+            save_weights_only=False,
+            verbose=1
+        ),
+        tf.keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            mode="min",
+            patience=EARLY_STOPPING_PATIENCE,
+            restore_best_weights=True,
+            verbose=1
+        ),
+        tf.keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss",
+            mode="min",
+            factor=REDUCE_LR_FACTOR,
+            patience=REDUCE_LR_PATIENCE,
+            min_lr=MIN_LEARNING_RATE,
+            verbose=1
+        )
+    ]
+    return callbacks
+
+
+# ------------------------------------------------------------
+# BLOCK 3B. PROPOSED CNN + MULTI-HEAD ATTENTION
+# ------------------------------------------------------------
+
+def build_cnn_mha(num_classes, input_shape=IMAGE_SHAPE):
+    """
+    CNN feature extraction followed by spatial-token MHA.
+    Input is RGB float pixels in [0,255], as produced by Block 2.
+    """
+    inputs = tf.keras.Input(shape=input_shape, name="image")
+    x = make_augmentation()(inputs)
+
+    for filters in [32, 64, 128, 256]:
+        x = tf.keras.layers.Conv2D(
+            filters, 3, padding="same", use_bias=False
+        )(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.Activation("relu")(x)
+        x = tf.keras.layers.Conv2D(
+            filters, 3, padding="same", use_bias=False
+        )(x)
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.Activation("relu")(x)
+        x = tf.keras.layers.MaxPooling2D(pool_size=2)(x)
+        if filters in [128, 256]:
+            x = tf.keras.layers.Dropout(0.15)(x)
+
+    # Preserve the spatial feature map for Grad-CAM.
+    feature_map = x
+    channels = int(feature_map.shape[-1])
+    tokens = tf.keras.layers.Reshape(
+        (-1, channels), name="spatial_tokens"
+    )(feature_map)
+
+    attention = tf.keras.layers.MultiHeadAttention(
+        num_heads=4,
+        key_dim=max(channels // 4, 32),
+        dropout=0.10,
+        name="multi_head_attention"
+    )(tokens, tokens)
+
+    x = tf.keras.layers.Add(name="attention_residual")([tokens, attention])
+    x = tf.keras.layers.LayerNormalization()(x)
+    x = tf.keras.layers.GlobalAveragePooling1D()(x)
+    x = tf.keras.layers.Dense(256, activation="relu")(x)
+    x = tf.keras.layers.Dropout(0.40)(x)
+    outputs = tf.keras.layers.Dense(
+        num_classes, activation="softmax", name="predictions"
+    )(x)
+
+    model = tf.keras.Model(inputs, outputs, name="CNN_MHA_GradCAM")
+    return compile_classifier(model)
+
+
+# ------------------------------------------------------------
+# BLOCK 4. BASELINE ARCHITECTURES
+# ------------------------------------------------------------
+
+def build_efficientnet_b5(num_classes, input_shape=IMAGE_SHAPE):
+    inputs = tf.keras.Input(shape=input_shape, name="image")
+    x = make_augmentation()(inputs)
+    # EfficientNet Keras implementation includes its own input rescaling.
+    backbone = tf.keras.applications.EfficientNetB5(
+        include_top=False, weights="imagenet",
+        input_shape=input_shape, pooling=None
+    )
+    backbone.trainable = False
+    x = backbone(x, training=False)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dropout(0.35)(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation="softmax")(x)
+    model = tf.keras.Model(inputs, outputs, name="EfficientNetB5")
+    model.backbone = backbone
+    return compile_classifier(model)
+
+
+def build_application_classifier(app_name, num_classes, input_shape=IMAGE_SHAPE):
+    inputs = tf.keras.Input(shape=input_shape, name="image")
+    x = make_augmentation()(inputs)
+
+    if app_name == "VGG16":
+        x = tf.keras.applications.vgg16.preprocess_input(x)
+        backbone = tf.keras.applications.VGG16(
+            include_top=False, weights="imagenet",
+            input_shape=input_shape, pooling=None
+        )
+    elif app_name == "VGG19":
+        x = tf.keras.applications.vgg19.preprocess_input(x)
+        backbone = tf.keras.applications.VGG19(
+            include_top=False, weights="imagenet",
+            input_shape=input_shape, pooling=None
+        )
+    elif app_name == "ResNet101V2":
+        x = tf.keras.applications.resnet_v2.preprocess_input(x)
+        backbone = tf.keras.applications.ResNet101V2(
+            include_top=False, weights="imagenet",
+            input_shape=input_shape, pooling=None
+        )
+    elif app_name == "InceptionV3":
+        x = tf.keras.applications.inception_v3.preprocess_input(x)
+        backbone = tf.keras.applications.InceptionV3(
+            include_top=False, weights="imagenet",
+            input_shape=input_shape, pooling=None
+        )
+    else:
+        raise ValueError(f"Unsupported application: {app_name}")
+
+    backbone.trainable = False
+    x = backbone(x, training=False)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dropout(0.35)(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation="softmax")(x)
+    model = tf.keras.Model(inputs, outputs, name=app_name)
+    model.backbone = backbone
+    return compile_classifier(model)
+
+
+def residual_unit(x, filters, stride=1):
+    shortcut = x
+    y = tf.keras.layers.Conv2D(
+        filters, 3, strides=stride, padding="same", use_bias=False
+    )(x)
+    y = tf.keras.layers.BatchNormalization()(y)
+    y = tf.keras.layers.ReLU()(y)
+    y = tf.keras.layers.Conv2D(
+        filters, 3, padding="same", use_bias=False
+    )(y)
+    y = tf.keras.layers.BatchNormalization()(y)
+
+    if stride != 1 or int(shortcut.shape[-1]) != filters:
+        shortcut = tf.keras.layers.Conv2D(
+            filters, 1, strides=stride, padding="same", use_bias=False
+        )(shortcut)
+        shortcut = tf.keras.layers.BatchNormalization()(shortcut)
+
+    y = tf.keras.layers.Add()([shortcut, y])
+    return tf.keras.layers.ReLU()(y)
+
+
+def build_resnet9(num_classes, input_shape=IMAGE_SHAPE):
+    """Compact ResNet-9-style network trained from scratch."""
+    inputs = tf.keras.Input(shape=input_shape, name="image")
+    x = make_augmentation()(inputs)
+    x = tf.keras.layers.Rescaling(1.0 / 255.0)(x)
+    x = tf.keras.layers.Conv2D(64, 3, padding="same", use_bias=False)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.ReLU()(x)
+    x = residual_unit(x, 128, stride=2)
+    x = tf.keras.layers.MaxPooling2D()(x)
+    x = residual_unit(x, 256, stride=2)
+    x = tf.keras.layers.MaxPooling2D()(x)
+    x = tf.keras.layers.Conv2D(512, 3, padding="same", use_bias=False)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.ReLU()(x)
+    x = tf.keras.layers.GlobalMaxPooling2D()(x)
+    x = tf.keras.layers.Dropout(0.40)(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation="softmax")(x)
+    return compile_classifier(
+        tf.keras.Model(inputs, outputs, name="ResNet9_SHAP")
+    )
+
+
+# ------------------------------------------------------------
+# BLOCK 5. TRAINING, OPTIONAL FINE-TUNING AND ENSEMBLE
+# ------------------------------------------------------------
+
+def fit_one_model(dataset_name, model_key, model, data):
+    trainable, non_trainable, total = count_parameters(model)
+    weights = make_class_weights(data["train_dataframe"], data["num_classes"])
+
+    start = time.perf_counter()
+    history = model.fit(
+        data["train"],
+        validation_data=data["validation"],
+        epochs=EPOCHS,
+        class_weight=weights if USE_CLASS_WEIGHTS else None,
+        callbacks=callbacks_for(dataset_name, model_key),
+        verbose=1
+    )
+    training_seconds = time.perf_counter() - start
+
+    # Optional fine-tuning of the final backbone layers.
+    backbone = getattr(model, "backbone", None)
+    if FINE_TUNE_APPLICATIONS and backbone is not None:
+        backbone.trainable = True
+        for layer in backbone.layers[:-APPLICATION_FINE_TUNE_LAYERS]:
+            layer.trainable = False
+        model.compile(
+            optimizer=tf.keras.optimizers.AdamW(
+                learning_rate=LEARNING_RATE * 0.1,
+                weight_decay=WEIGHT_DECAY
+            ),
+            loss="sparse_categorical_crossentropy",
+            metrics=["accuracy"]
+        )
+        fine_history = model.fit(
+            data["train"],
+            validation_data=data["validation"],
+            epochs=max(5, EPOCHS // 4),
+            class_weight=weights if USE_CLASS_WEIGHTS else None,
+            callbacks=callbacks_for(dataset_name, model_key + "_finetuned"),
+            verbose=1
+        )
+        training_seconds += sum(fine_history.history.get("loss", [])) * 0.0
+        # Use the best checkpoint from the fine-tuning phase if it exists.
+        fine_path = model_file(dataset_name, model_key + "_finetuned")
+        if fine_path.exists():
+            model = tf.keras.models.load_model(fine_path)
+
+    # Load best first-stage checkpoint if fine-tuning checkpoint absent.
+    first_path = model_file(dataset_name, model_key)
+    if first_path.exists():
+        candidate = tf.keras.models.load_model(first_path)
+        # The first checkpoint is guaranteed to be a valid saved model.
+        # Prefer fine-tuned model only when its checkpoint exists.
+        fine_path = model_file(dataset_name, model_key + "_finetuned")
+        model = (tf.keras.models.load_model(fine_path)
+                 if fine_path.exists() else candidate)
+
+    MODEL_REGISTRY[(dataset_name, model_key)] = model
+    TRAINING_RECORDS.append({
+        "dataset": dataset_name,
+        "model": model_key,
+        "training_time_seconds": float(training_seconds),
+        "trainable_parameters": int(trainable),
+        "non_trainable_parameters": int(non_trainable),
+        "total_parameters": int(total),
+        "best_validation_accuracy": float(max(history.history.get(
+            "val_accuracy", [np.nan]
+        ))),
+        "epochs_completed": int(len(history.history.get("loss", [])))
+    })
+    return model, history
+
+
+def predict_model(model, tf_dataset):
+    y_true, y_prob = [], []
+    for images, labels in tf_dataset:
+        probabilities = model.predict(images, verbose=0)
+        y_prob.append(probabilities)
+        y_true.append(labels.numpy())
+    return np.concatenate(y_true), np.concatenate(y_prob)
+
+
+def train_experiment_models(dataset_name, data):
+    num_classes = data["num_classes"]
+    histories = {}
+
+    # Proposed model.
+    model, histories["CNN_MHA"] = fit_one_model(
+        dataset_name, "CNN_MHA",
+        build_cnn_mha(num_classes), data
+    )
+
+    # B1 and B2 intentionally share the same trained classifier.
+    efficientnet, histories["EfficientNetB5"] = fit_one_model(
+        dataset_name, "EfficientNetB5",
+        build_efficientnet_b5(num_classes), data
+    )
+    MODEL_REGISTRY[(dataset_name, "EfficientNetB5_GradCAM")] = efficientnet
+    MODEL_REGISTRY[(dataset_name, "EfficientNetB5_LIME")] = efficientnet
+
+    # B3 constituent networks. Average their predicted class probabilities.
+    ensemble_members = {}
+    for architecture in ["VGG16", "VGG19", "ResNet101V2", "InceptionV3"]:
+        member, histories[architecture] = fit_one_model(
+            dataset_name, architecture,
+            build_application_classifier(architecture, num_classes), data
+        )
+        ensemble_members[architecture] = member
+
+    MODEL_REGISTRY[(dataset_name, "Four_Model_Ensemble_LIME")] = ensemble_members
+
+    # B4.
+    resnet9, histories["ResNet9"] = fit_one_model(
+        dataset_name, "ResNet9",
+        build_resnet9(num_classes), data
+    )
+    MODEL_REGISTRY[(dataset_name, "ResNet9_SHAP")] = resnet9
+
+    return histories
+
+
+def predict_experiment_model(dataset_name, model_key, test_dataset):
+    model = MODEL_REGISTRY[(dataset_name, model_key)]
+    if isinstance(model, dict):
+        member_probabilities = []
+        y_true = None
+        for member in model.values():
+            current_y, current_prob = predict_model(member, test_dataset)
+            if y_true is None:
+                y_true = current_y
+            elif not np.array_equal(y_true, current_y):
+                raise RuntimeError("Ensemble members produced different label order.")
+            member_probabilities.append(current_prob)
+        return y_true, np.mean(member_probabilities, axis=0)
+    return predict_model(model, test_dataset)
+
+
+# ------------------------------------------------------------
+# BLOCK 6. METRICS, REPORTS AND PUBLICATION-QUALITY PLOTS
+# ------------------------------------------------------------
+
+def specificity_macro(y_true, y_pred, num_classes):
+    cm = confusion_matrix(y_true, y_pred, labels=np.arange(num_classes))
+    values = []
+    for i in range(num_classes):
+        tp = cm[i, i]
+        fn = cm[i, :].sum() - tp
+        fp = cm[:, i].sum() - tp
+        tn = cm.sum() - (tp + fn + fp)
+        values.append(tn / (tn + fp) if (tn + fp) else np.nan)
+    return float(np.nanmean(values))
+
+
+def calculate_metrics(y_true, y_prob, num_classes):
+    y_pred = np.argmax(y_prob, axis=1)
+    result = {
+        "accuracy": accuracy_score(y_true, y_pred),
+        "precision_macro": precision_score(
+            y_true, y_pred, average="macro", zero_division=0
+        ),
+        "recall_macro": recall_score(
+            y_true, y_pred, average="macro", zero_division=0
+        ),
+        "f1_macro": f1_score(
+            y_true, y_pred, average="macro", zero_division=0
+        ),
+        "specificity_macro": specificity_macro(
+            y_true, y_pred, num_classes
+        ),
+        "balanced_accuracy": balanced_accuracy_score(y_true, y_pred),
+        "mcc": matthews_corrcoef(y_true, y_pred),
+        "cohen_kappa": cohen_kappa_score(y_true, y_pred)
+    }
+    try:
+        if num_classes == 2:
+            result["auc_macro"] = roc_auc_score(y_true, y_prob[:, 1])
+        else:
+            result["auc_macro"] = roc_auc_score(
+                y_true, y_prob, multi_class="ovr", average="macro"
+            )
+    except ValueError:
+        result["auc_macro"] = np.nan
+    return result, y_pred
+
+
+def evaluate_all_models(dataset_name, data):
+    class_names = data["classes"]
+    num_classes = data["num_classes"]
+    rows = []
+
+    for model_key in [
+        "CNN_MHA",
+        "EfficientNetB5_GradCAM",
+        "EfficientNetB5_LIME",
+        "Four_Model_Ensemble_LIME",
+        "ResNet9_SHAP"
+    ]:
+        print(f"\nEvaluating {dataset_name}: {model_key}")
+        y_true, y_prob = predict_experiment_model(
+            dataset_name, model_key, data["test"]
+        )
+        metrics, y_pred = calculate_metrics(y_true, y_prob, num_classes)
+
+        model = MODEL_REGISTRY[(dataset_name, model_key)]
+        if isinstance(model, dict):
+            params = sum(m.count_params() for m in model.values())
+            model_size_mb = sum(
+                model_file(dataset_name, k).stat().st_size
+                for k in model.keys()
+                if model_file(dataset_name, k).exists()
+            ) / (1024 ** 2)
+        else:
+            params = model.count_params()
+            saved_path = model_file(
+                dataset_name,
+                "EfficientNetB5" if model_key.startswith("EfficientNetB5")
+                else ("CNN_MHA" if model_key == "CNN_MHA" else "ResNet9")
+            )
+            model_size_mb = (
+                saved_path.stat().st_size / (1024 ** 2)
+                if saved_path.exists() else np.nan
+            )
+
+        training_key = (
+            "CNN_MHA" if model_key == "CNN_MHA"
+            else "EfficientNetB5" if model_key.startswith("EfficientNetB5")
+            else "ResNet9" if model_key == "ResNet9_SHAP"
+            else None
+        )
+        training_time = np.nan
+        if training_key:
+            found = [r for r in TRAINING_RECORDS
+                     if r["dataset"] == dataset_name
+                     and r["model"] == training_key]
+            if found:
+                training_time = found[-1]["training_time_seconds"]
+
+        rows.append({
+            "dataset": dataset_name,
+            "model": model_key,
+            **{k: float(v) if np.isfinite(v) else np.nan
+               for k, v in metrics.items()},
+            "training_time_seconds": training_time,
+            "total_parameters": int(params),
+            "model_size_mb": float(model_size_mb)
+        })
+
+        PREDICTION_RECORDS[(dataset_name, model_key)] = {
+            "y_true": y_true,
+            "y_pred": y_pred,
+            "y_prob": y_prob
+        }
+
+        cm = confusion_matrix(y_true, y_pred, labels=np.arange(num_classes))
+        CONFUSION_MATRICES[(dataset_name, model_key)] = cm
+
+        report = classification_report(
+            y_true, y_pred, labels=np.arange(num_classes),
+            target_names=class_names, output_dict=True, zero_division=0
+        )
+        pd.DataFrame(report).transpose().to_csv(
+            Path(TABLE_DIR) / f"{dataset_name}_{model_key}_classification_report.csv"
+        )
+
+        if SAVE_PREDICTIONS:
+            pred_df = pd.DataFrame({
+                "true_label_index": y_true,
+                "predicted_label_index": y_pred,
+                "true_label": [class_names[i] for i in y_true],
+                "predicted_label": [class_names[i] for i in y_pred],
+                "confidence": np.max(y_prob, axis=1)
+            })
+            pred_df.to_csv(
+                Path(RESULTS_DIR) / "predictions" /
+                f"{dataset_name}_{model_key}_predictions.csv",
+                index=False
+            )
+
+    result_df = pd.DataFrame(rows)
+    result_df.to_csv(
+        Path(TABLE_DIR) / f"{dataset_name}_model_comparison.csv",
+        index=False
+    )
+    return result_df
+
+
+def plot_metric_comparison(metrics_df, dataset_name):
+    metric_columns = [
+        "accuracy", "precision_macro", "recall_macro", "f1_macro",
+        "specificity_macro", "balanced_accuracy", "auc_macro"
+    ]
+    plot_df = metrics_df.melt(
+        id_vars="model", value_vars=metric_columns,
+        var_name="metric", value_name="score"
+    )
+    plt.figure(figsize=(16, 7))
+    sns.barplot(data=plot_df, x="metric", y="score", hue="model")
+    plt.ylim(0, 1.05)
+    plt.ylabel("Score")
+    plt.xlabel("Evaluation metric")
+    plt.title(f"{dataset_name.title()} - Classification performance")
+    plt.xticks(rotation=20, ha="right")
+    plt.legend(title="Model", bbox_to_anchor=(1.02, 1), loc="upper left")
+    plt.tight_layout()
+    plt.savefig(
+        Path(FIGURE_DIR) / f"{dataset_name}_all_metrics_comparison.png",
+        dpi=300, bbox_inches="tight"
+    )
+    plt.close()
+
+    main_metrics = ["accuracy", "precision_macro", "recall_macro", "f1_macro"]
+    plt.figure(figsize=(13, 6))
+    sns.barplot(
+        data=metrics_df.melt(
+            id_vars="model", value_vars=main_metrics,
+            var_name="metric", value_name="score"
+        ),
+        x="model", y="score", hue="metric"
+    )
+    plt.ylim(0, 1.05)
+    plt.title(f"{dataset_name.title()} - Main metric comparison")
+    plt.xticks(rotation=18, ha="right")
+    plt.tight_layout()
+    plt.savefig(
+        Path(FIGURE_DIR) / f"{dataset_name}_main_metrics.png",
+        dpi=300, bbox_inches="tight"
+    )
+    plt.close()
+
+
+def plot_confusion_matrices(dataset_name, data):
+    model_keys = [
+        "CNN_MHA", "EfficientNetB5_GradCAM", "EfficientNetB5_LIME",
+        "Four_Model_Ensemble_LIME", "ResNet9_SHAP"
+    ]
+    fig, axes = plt.subplots(2, 3, figsize=(21, 13))
+    axes = axes.ravel()
+    for ax, model_key in zip(axes, model_keys):
+        cm = CONFUSION_MATRICES[(dataset_name, model_key)]
+        sns.heatmap(
+            cm, annot=True, fmt="d", cmap="Blues", cbar=False,
+            xticklabels=data["classes"], yticklabels=data["classes"], ax=ax
+        )
+        ax.set_title(model_key)
+        ax.set_xlabel("Predicted label")
+        ax.set_ylabel("True label")
+        ax.tick_params(axis="x", rotation=45)
+        ax.tick_params(axis="y", rotation=0)
+    axes[-1].axis("off")
+    plt.suptitle(f"{dataset_name.title()} - Confusion matrices", fontsize=16)
+    plt.tight_layout()
+    plt.savefig(
+        Path(FIGURE_DIR) / f"{dataset_name}_confusion_matrices.png",
+        dpi=300, bbox_inches="tight"
+    )
+    plt.close()
+
+
+def plot_training_histories(dataset_name, histories):
+    for model_key, history in histories.items():
+        hist = history.history
+        if "accuracy" not in hist:
+            continue
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+        axes[0].plot(hist.get("accuracy", []), label="Training")
+        axes[0].plot(hist.get("val_accuracy", []), label="Validation")
+        axes[0].set_title(f"{model_key} accuracy")
+        axes[0].set_xlabel("Epoch")
+        axes[0].set_ylabel("Accuracy")
+        axes[0].legend()
+        axes[1].plot(hist.get("loss", []), label="Training")
+        axes[1].plot(hist.get("val_loss", []), label="Validation")
+        axes[1].set_title(f"{model_key} loss")
+        axes[1].set_xlabel("Epoch")
+        axes[1].set_ylabel("Loss")
+        axes[1].legend()
+        plt.tight_layout()
+        plt.savefig(
+            Path(FIGURE_DIR) /
+            f"{dataset_name}_{model_key}_training_curves.png",
+            dpi=300, bbox_inches="tight"
+        )
+        plt.close()
+
+
+def plot_roc_curves(dataset_name, data):
+    num_classes = data["num_classes"]
+    if num_classes < 2:
+        return
+    plt.figure(figsize=(9, 7))
+    model_keys = [
+        "CNN_MHA", "EfficientNetB5_GradCAM", "EfficientNetB5_LIME",
+        "Four_Model_Ensemble_LIME", "ResNet9_SHAP"
+    ]
+    for model_key in model_keys:
+        item = PREDICTION_RECORDS[(dataset_name, model_key)]
+        y_true, y_prob = item["y_true"], item["y_prob"]
+        try:
+            if num_classes == 2:
+                fpr, tpr, _ = roc_curve(y_true, y_prob[:, 1])
+                roc_auc = auc(fpr, tpr)
+            else:
+                binary_true = label_binarize(
+                    y_true, classes=np.arange(num_classes)
+                )
+                fpr, tpr, _ = roc_curve(
+                    binary_true.ravel(), y_prob.ravel()
+                )
+                roc_auc = auc(fpr, tpr)
+            plt.plot(fpr, tpr, label=f"{model_key} (AUC={roc_auc:.3f})")
+        except ValueError:
+            continue
+    plt.plot([0, 1], [0, 1], linestyle="--", label="Chance")
+    plt.xlabel("False positive rate")
+    plt.ylabel("True positive rate")
+    plt.title(f"{dataset_name.title()} - ROC curves")
+    plt.legend(loc="lower right", fontsize=8)
+    plt.tight_layout()
+    plt.savefig(
+        Path(FIGURE_DIR) / f"{dataset_name}_roc_curves.png",
+        dpi=300, bbox_inches="tight"
+    )
+    plt.close()
+
+
+# ------------------------------------------------------------
+# BLOCK 7. GRAD-CAM FOR CNN_MHA AND EFFICIENTNETB5
+# ------------------------------------------------------------
+
+def find_last_conv_layer(model):
+    candidates = [
+        layer.name for layer in model.layers
+        if isinstance(layer, tf.keras.layers.Conv2D)
+    ]
+    if candidates:
+        return candidates[-1]
+
+    # Search nested backbone when the outer model has no Conv2D layer.
+    for layer in reversed(model.layers):
+        if isinstance(layer, tf.keras.Model):
+            nested = [
+                sublayer.name for sublayer in layer.layers
+                if isinstance(sublayer, tf.keras.layers.Conv2D)
+            ]
+            if nested:
+                return layer.name, nested[-1]
+    raise ValueError("No convolutional layer found for Grad-CAM.")
+
+
+def gradcam_heatmap(model, image_batch, class_index=None):
+    """
+    Grad-CAM for a model with a directly addressable final Conv2D layer.
+    For nested application backbones, a nested feature extractor is built.
+    """
+    target = find_last_conv_layer(model)
+    if isinstance(target, tuple):
+        outer_name, inner_name = target
+        backbone = model.get_layer(outer_name)
+        conv_layer = backbone.get_layer(inner_name)
+        feature_model = tf.keras.Model(
+            backbone.input, [conv_layer.output, backbone.output]
+        )
+        inputs = model.input
+        x = inputs
+        # Rebuild the path from input through augmentation/preprocessing,
+        # then obtain the nested backbone's feature and final prediction.
+        for layer in model.layers:
+            if layer.name == outer_name:
+                break
+            if layer.name != "image":
+                x = layer(x)
+        with tf.GradientTape() as tape:
+            conv_output, backbone_output = feature_model(x)
+            z = backbone_output
+            # Continue from backbone output through classifier head.
+            passed_backbone = False
+            for layer in model.layers:
+                if layer.name == outer_name:
+                    passed_backbone = True
+                    continue
+                if passed_backbone:
+                    z = layer(z)
+            if class_index is None:
+                class_index = tf.argmax(z[0])
+            score = z[:, class_index]
+            grads = tape.gradient(score, conv_output)
+    else:
+        conv_layer = model.get_layer(target)
+        grad_model = tf.keras.Model(
+            model.inputs, [conv_layer.output, model.output]
+        )
+        with tf.GradientTape() as tape:
+            conv_output, predictions = grad_model(image_batch, training=False)
+            if class_index is None:
+                class_index = tf.argmax(predictions[0])
+            score = predictions[:, class_index]
+            grads = tape.gradient(score, conv_output)
+
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+    conv_output = conv_output[0]
+    heatmap = tf.reduce_sum(conv_output * pooled_grads, axis=-1)
+    heatmap = tf.maximum(heatmap, 0)
+    maximum = tf.reduce_max(heatmap)
+    heatmap = tf.where(maximum > 0, heatmap / maximum, heatmap)
+    return heatmap.numpy()
+
+
+def save_gradcam_examples(dataset_name, data, model_key, max_examples=8):
+    model = MODEL_REGISTRY[(dataset_name, model_key)]
+    out_dir = Path(GRADCAM_DIR) / dataset_name / model_key
+    out_dir.mkdir(parents=True, exist_ok=True)
+    saved = 0
+
+    for images, labels in data["test"]:
+        probs = model.predict(images, verbose=0)
+        for i in range(images.shape[0]):
+            if saved >= max_examples:
+                return
+            image = images[i].numpy().astype(np.uint8)
+            true_idx = int(labels[i].numpy())
+            pred_idx = int(np.argmax(probs[i]))
+            heatmap = gradcam_heatmap(model, images[i:i+1], pred_idx)
+            heatmap = cv2.resize(
+                heatmap, (image.shape[1], image.shape[0])
+            )
+            heatmap_uint8 = np.uint8(255 * heatmap)
+            colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
+            overlay = cv2.addWeighted(image, 0.60, colored, 0.40, 0)
+
+            fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+            axes[0].imshow(image)
+            axes[0].set_title("Original")
+            axes[1].imshow(heatmap, cmap="jet")
+            axes[1].set_title("Grad-CAM")
+            axes[2].imshow(overlay)
+            axes[2].set_title(
+                f"True: {data['classes'][true_idx]}\n"
+                f"Pred: {data['classes'][pred_idx]}"
+            )
+            for ax in axes:
+                ax.axis("off")
+            plt.tight_layout()
+            plt.savefig(
+                out_dir / f"gradcam_{saved:03d}.png",
+                dpi=250, bbox_inches="tight"
+            )
+            plt.close()
+            saved += 1
+
+
+# ------------------------------------------------------------
+# BLOCK 8. LIME AND SHAP EXPLANATIONS
+# ------------------------------------------------------------
+
+def load_lime_dependencies():
+    try:
+        from lime import lime_image
+        from skimage.segmentation import mark_boundaries
+        return lime_image, mark_boundaries
+    except ImportError as exc:
+        raise ImportError(
+            "LIME is optional. Install with: pip install lime scikit-image"
+        ) from exc
+
+
+def explain_with_lime(dataset_name, data, model_key, max_examples=5):
+    lime_image, mark_boundaries = load_lime_dependencies()
+    model = MODEL_REGISTRY[(dataset_name, model_key)]
+    explainer = lime_image.LimeImageExplainer(random_state=SEED)
+    out_dir = Path(LIME_DIR) / dataset_name / model_key
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    def predict_fn(images):
+        images = np.asarray(images, dtype=np.float32)
+        return model.predict(images, verbose=0)
+
+    saved = 0
+    for images, labels in data["test"]:
+        for i in range(images.shape[0]):
+            if saved >= max_examples:
+                return
+            image = images[i].numpy().astype(np.uint8)
+            explanation = explainer.explain_instance(
+                image.astype(np.double),
+                classifier_fn=predict_fn,
+                top_labels=1,
+                hide_color=0,
+                num_samples=LIME_NUM_SAMPLES
+            )
+            label = int(explanation.top_labels[0])
+            temp, mask = explanation.get_image_and_mask(
+                label, positive_only=True, num_features=8,
+                hide_rest=False
+            )
+            fig, axes = plt.subplots(1, 2, figsize=(9, 4))
+            axes[0].imshow(image)
+            axes[0].set_title("Original")
+            axes[1].imshow(mark_boundaries(temp / 255.0, mask))
+            axes[1].set_title(f"LIME: {data['classes'][label]}")
+            for ax in axes:
+                ax.axis("off")
+            plt.tight_layout()
+            plt.savefig(
+                out_dir / f"lime_{saved:03d}.png",
+                dpi=250, bbox_inches="tight"
+            )
+            plt.close()
+            saved += 1
+
+
+def explain_with_shap(dataset_name, data, max_examples=SHAP_EXPLANATION_COUNT):
+    try:
+        import shap
+    except ImportError as exc:
+        raise ImportError("SHAP is optional. Install with: pip install shap") from exc
+
+    model = MODEL_REGISTRY[(dataset_name, "ResNet9_SHAP")]
+    out_dir = Path(SHAP_DIR) / dataset_name / "ResNet9_SHAP"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Collect small, deterministic batches from training and test data.
+    background_images = []
+    for images, _ in data["train"]:
+        background_images.append(images.numpy())
+        if sum(len(x) for x in background_images) >= SHAP_BACKGROUND_COUNT:
+            break
+    background = np.concatenate(background_images, axis=0)[:SHAP_BACKGROUND_COUNT]
+
+    test_images, test_labels = [], []
+    for images, labels in data["test"]:
+        test_images.append(images.numpy())
+        test_labels.append(labels.numpy())
+        if sum(len(x) for x in test_images) >= max_examples:
+            break
+    explain_x = np.concatenate(test_images, axis=0)[:max_examples]
+    explain_y = np.concatenate(test_labels, axis=0)[:max_examples]
+
+    # GradientExplainer is generally more practical than KernelExplainer
+    # for a differentiable CNN. Output shape depends on SHAP version.
+    explainer = shap.GradientExplainer(model, background)
+    shap_values = explainer.shap_values(explain_x)
+
+    # Save per-image mean absolute attribution heatmaps.
+    if isinstance(shap_values, list):
+        # Older SHAP versions: list indexed by output class.
+        for i in range(len(explain_x)):
+            class_idx = int(np.argmax(model.predict(explain_x[i:i+1], verbose=0)[0]))
+            values = np.asarray(shap_values[class_idx])[i]
+            heatmap = np.mean(np.abs(values), axis=-1)
+            heatmap = heatmap / (heatmap.max() + 1e-8)
+            fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+            axes[0].imshow(explain_x[i].astype(np.uint8))
+            axes[0].set_title("Original")
+            axes[1].imshow(heatmap, cmap="inferno")
+            axes[1].set_title(f"SHAP attribution: {data['classes'][class_idx]}")
+            for ax in axes:
+                ax.axis("off")
+            plt.tight_layout()
+            plt.savefig(out_dir / f"shap_{i:03d}.png", dpi=250)
+            plt.close()
+    else:
+        values = np.asarray(shap_values)
+        # Newer versions often return [samples, H, W, channels, classes].
+        for i in range(len(explain_x)):
+            class_idx = int(np.argmax(model.predict(explain_x[i:i+1], verbose=0)[0]))
+            sample_values = values[i]
+            if sample_values.ndim == 4:
+                sample_values = sample_values[..., class_idx]
+            heatmap = np.mean(np.abs(sample_values), axis=-1)
+            heatmap = heatmap / (heatmap.max() + 1e-8)
+            fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+            axes[0].imshow(explain_x[i].astype(np.uint8))
+            axes[0].set_title("Original")
+            axes[1].imshow(heatmap, cmap="inferno")
+            axes[1].set_title(f"SHAP attribution: {data['classes'][class_idx]}")
+            for ax in axes:
+                ax.axis("off")
+            plt.tight_layout()
+            plt.savefig(out_dir / f"shap_{i:03d}.png", dpi=250)
+            plt.close()
+
+
+# ------------------------------------------------------------
+# BLOCK 9. EXPERIMENT ORCHESTRATION AND EXPORT
+# ------------------------------------------------------------
+
+def run_full_experiment(run_xai=True):
+    all_metrics = []
+    all_histories = {}
+
+    for dataset_name, data in PREPARED_DATASETS.items():
+        print("\n" + "#" * 85)
+        print(f"STARTING EXPERIMENT: {dataset_name.upper()}")
+        print("#" * 85)
+
+        histories = train_experiment_models(dataset_name, data)
+        all_histories[dataset_name] = histories
+        plot_training_histories(dataset_name, histories)
+
+        metrics_df = evaluate_all_models(dataset_name, data)
+        all_metrics.append(metrics_df)
+
+        plot_metric_comparison(metrics_df, dataset_name)
+        plot_confusion_matrices(dataset_name, data)
+        plot_roc_curves(dataset_name, data)
+
+        if run_xai:
+            # Grad-CAM: proposed CNN-MHA and EfficientNetB5.
+            for key in ["CNN_MHA", "EfficientNetB5_GradCAM"]:
+                try:
+                    save_gradcam_examples(
+                        dataset_name, data, key,
+                        max_examples=EXPLAINABILITY_SAMPLE_COUNT
+                    )
+                except Exception as exc:
+                    print(f"Grad-CAM failed for {dataset_name}/{key}: {exc}")
+
+            # LIME: EfficientNetB5 and the four-network ensemble.
+            for key in [
+                "EfficientNetB5_LIME", "Four_Model_Ensemble_LIME"
+            ]:
+                try:
+                    explain_with_lime(
+                        dataset_name, data, key, max_examples=5
+                    )
+                except Exception as exc:
+                    print(f"LIME failed for {dataset_name}/{key}: {exc}")
+
+            try:
+                explain_with_shap(dataset_name, data)
+            except Exception as exc:
+                print(f"SHAP failed for {dataset_name}: {exc}")
+
+    combined = pd.concat(all_metrics, ignore_index=True)
+    combined.to_csv(
+        Path(TABLE_DIR) / "all_datasets_all_models_comparison.csv",
+        index=False
+    )
+    pd.DataFrame(TRAINING_RECORDS).to_csv(
+        Path(TABLE_DIR) / "training_computational_metrics.csv",
+        index=False
+    )
+
+    # Save a machine-readable experiment summary.
+    summary = {
+        "seed": int(SEED),
+        "image_size": list(IMAGE_SIZE),
+        "batch_size": int(BATCH_SIZE),
+        "configured_epochs": int(EPOCHS),
+        "datasets": list(PREPARED_DATASETS.keys()),
+        "model_order": [
+            "CNN_MHA", "EfficientNetB5_GradCAM",
+            "EfficientNetB5_LIME", "Four_Model_Ensemble_LIME",
+            "ResNet9_SHAP"
+        ],
+        "note": (
+            "EfficientNetB5_GradCAM and EfficientNetB5_LIME share "
+            "one trained EfficientNetB5 classifier; only the explanation "
+            "method differs."
+        )
+    }
+    with open(Path(RESULTS_DIR) / "experiment_summary.json",
+              "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=4)
+
+    print("\n" + "=" * 85)
+    print("EXPERIMENT COMPLETED")
+    print("Metrics:", Path(TABLE_DIR) / "all_datasets_all_models_comparison.csv")
+    print("Figures:", FIGURE_DIR)
+    print("Grad-CAM:", GRADCAM_DIR)
+    print("LIME:", LIME_DIR)
+    print("SHAP:", SHAP_DIR)
+    print("=" * 85)
+
+    return combined, all_histories
+
+# ============================================================
+# EXECUTE THE COMPLETE EXPERIMENT
+# ============================================================
+
+if __name__ == "__main__":
+
+    print("\n" + "=" * 85)
+    print("STARTING COMPLETE PLANT DISEASE CLASSIFICATION EXPERIMENT")
+    print("=" * 85)
+
+    # Confirm output directories exist
+    Path(FIGURE_DIR).mkdir(parents=True, exist_ok=True)
+    Path(TABLE_DIR).mkdir(parents=True, exist_ok=True)
+
+    print("Figure directory:", FIGURE_DIR)
+    print("Table directory:", TABLE_DIR)
+
+    # Confirm datasets are available
+    print("\nAvailable datasets:", list(PREPARED_DATASETS.keys()))
+
+    if not PREPARED_DATASETS:
+        raise RuntimeError(
+            "PREPARED_DATASETS is empty. Block 2 must complete "
+            "successfully before Block 9 is executed."
+        )
+
+    # Execute training, evaluation, plotting and explainability
+    COMBINED_METRICS, EXPERIMENT_HISTORIES = run_full_experiment(
+        run_xai=True
+    )
+
+    print("\nEXPERIMENT FINISHED SUCCESSFULLY")
+
+    print("Comparison figures:", FIGURE_DIR)
+    print("Comparison tables:", TABLE_DIR)
+# ------------------------------------------------------------
+# RUN
+# ------------------------------------------------------------
+# First run with run_xai=False to validate training and metrics.
+# Then, after confirming all models train successfully, run XAI.
+#
+# RESULTS_DF, TRAINING_HISTORIES = run_full_experiment(run_xai=False)
+# RESULTS_DF, TRAINING_HISTORIES = run_full_experiment(run_xai=True)
+#
+# Do not execute both lines consecutively: the second call retrains
+# the models. Uncomment ONE line only.
+# ============================================================
+#'''
+out = Path("/mnt/data/plant_disease_blocks_3_to_9.py")
+from pathlib import Path
+
+out = Path(__file__).resolve().parent / "plant_disease_blocks_3_to_9.py"
+
+out.parent.mkdir(parents=True, exist_ok=True)
+out.write_text(code, encoding="utf-8")
+
+print(f"File successfully saved to: {out}")
+print(f"Created: {out}")
+
+
+
+
+
+
+
+
+
+# ============================================================
+# BLOCK 10: PREDICTIVE UNCERTAINTY, CONFIDENCE AND
+#           COMPREHENSIVENESS EVALUATION
+#
+# Models:
+#   1. CNN_MHA
+#   2. EfficientNetB5_GradCAM
+#   3. EfficientNetB5_LIME
+#   4. Four_Model_Ensemble_LIME
+#   5. ResNet9_SHAP
+#
+# Datasets:
+#   1. Rice
+#   2. Sugarcane
+#
+# Outputs:
+#   - Predictive entropy
+#   - Normalized predictive entropy
+#   - Mean prediction confidence
+#   - True-class confidence
+#   - Prediction margin
+#   - Occlusion-based comprehensiveness proxy
+#   - CSV metric tables
+#   - Comparison plots
+# ============================================================
+
+# ============================================================
+# 1. BLOCK 10 CONFIGURATION
+# ============================================================
+
+BLOCK10_MAX_TEST_SAMPLES = 30
+
+BLOCK10_OCCLUSION_GRID = 4
+
+BLOCK10_OCCLUSION_FRACTION = 0.20
+
+BLOCK10_EPSILON = 1e-10
+
+BLOCK10_RESULTS = []
+
+BLOCK10_MODEL_CACHE = {}
+
+# ============================================================
+# 2. RESOLVE TRAINED MODEL
+# ============================================================
+
+def block10_get_model(dataset_name, model_name):
+
+    # First, check the nested dictionary structure.
+    if dataset_name in TRAINED_MODELS:
+
+        dataset_models = TRAINED_MODELS[dataset_name]
+
+        if isinstance(dataset_models, dict):
+
+            if model_name in dataset_models:
+
+                return dataset_models[model_name]
+
+    # Check tuple-based keys.
+    tuple_key = (dataset_name, model_name)
+
+    if tuple_key in TRAINED_MODELS:
+
+        return TRAINED_MODELS[tuple_key]
+
+    # Check combined string keys.
+    combined_key = f"{dataset_name}_{model_name}"
+
+    if combined_key in TRAINED_MODELS:
+
+        return TRAINED_MODELS[combined_key]
+
+    # EfficientNetB5 Grad-CAM and LIME are the same classifier.
+    # Reuse the trained classifier if only one alias is stored.
+    if model_name == "EfficientNetB5_GradCAM":
+
+        alternative = "EfficientNetB5_LIME"
+
+    elif model_name == "EfficientNetB5_LIME":
+
+        alternative = "EfficientNetB5_GradCAM"
+
+    else:
+
+        alternative = None
+
+    if alternative:
+
+        if dataset_name in TRAINED_MODELS:
+
+            dataset_models = TRAINED_MODELS[dataset_name]
+
+            if isinstance(dataset_models, dict):
+
+                if alternative in dataset_models:
+
+                    return dataset_models[alternative]
+
+        alternative_key = f"{dataset_name}_{alternative}"
+
+        if alternative_key in TRAINED_MODELS:
+
+            return TRAINED_MODELS[alternative_key]
+
+    raise KeyError(
+        f"Trained model not found for "
+        f"{dataset_name}/{model_name}. "
+        f"Check how Block 3-9 stores TRAINED_MODELS."
+    )
+
+# ============================================================
+# 3. NORMALIZE MODEL OUTPUTS INTO PROBABILITIES
+# ============================================================
+
+def block10_to_probabilities(model_output):
+
+    if isinstance(model_output, dict):
+
+        model_output = next(iter(model_output.values()))
+
+    elif isinstance(model_output, (tuple, list)):
+
+        model_output = model_output[0]
+
+    probabilities = np.asarray(
+        model_output,
+        dtype=np.float64
+    )
+
+    if probabilities.ndim == 1:
+
+        probabilities = probabilities.reshape(1, -1)
+
+    if probabilities.ndim != 2:
+
+        raise ValueError(
+            "Model output must have shape "
+            "(batch_size, number_of_classes)."
+        )
+
+    # Handle logits or already-normalized probabilities.
+    row_sums = probabilities.sum(axis=1)
+
+    is_probability = (
+        np.all(probabilities >= 0)
+        and np.all(probabilities <= 1)
+        and np.allclose(row_sums, 1.0, atol=1e-3)
+    )
+
+    if not is_probability:
+
+        probabilities = probabilities - np.max(
+            probabilities,
+            axis=1,
+            keepdims=True
+        )
+
+        exp_values = np.exp(probabilities)
+
+        probabilities = exp_values / np.sum(
+            exp_values,
+            axis=1,
+            keepdims=True
+        )
+
+    probabilities = np.clip(
+        probabilities,
+        BLOCK10_EPSILON,
+        1.0
+    )
+
+    probabilities = probabilities / probabilities.sum(
+        axis=1,
+        keepdims=True
+    )
+
+    return probabilities
+
+# ============================================================
+# 4. GENERATE MODEL PREDICTIONS
+# ============================================================
+
+def block10_predict(model, images):
+
+    predictions = model.predict(
+        images,
+        verbose=0
+    )
+
+    return block10_to_probabilities(
+        predictions
+    )
+
+# ============================================================
+# 5. CALCULATE PREDICTIVE UNCERTAINTY METRICS
+# ============================================================
+
+def block10_uncertainty_metrics(
+    probabilities,
+    true_labels
+):
+
+    probabilities = np.asarray(
+        probabilities,
+        dtype=np.float64
+    )
+
+    true_labels = np.asarray(
+        true_labels,
+        dtype=np.int64
+    )
+
+    number_of_classes = probabilities.shape[1]
+
+    predicted_labels = np.argmax(
+        probabilities,
+        axis=1
+    )
+
+    # Predictive entropy in nats.
+    entropy = -np.sum(
+        probabilities * np.log(probabilities),
+        axis=1
+    )
+
+    # Normalize entropy to [0, 1].
+    if number_of_classes > 1:
+
+        normalized_entropy = entropy / np.log(
+            number_of_classes
+        )
+
+    else:
+
+        normalized_entropy = np.zeros_like(
+            entropy
+        )
+
+    # Confidence of the predicted class.
+    confidence = np.max(
+        probabilities,
+        axis=1
+    )
+
+    # Confidence assigned to the correct class.
+    true_class_confidence = probabilities[
+        np.arange(len(true_labels)),
+        true_labels
+    ]
+
+    # Difference between the two largest probabilities.
+    sorted_probabilities = np.sort(
+        probabilities,
+        axis=1
+    )
+
+    prediction_margin = (
+        sorted_probabilities[:, -1]
+        - sorted_probabilities[:, -2]
+        if number_of_classes > 1
+        else np.ones(len(probabilities))
+    )
+
+    accuracy = np.mean(
+        predicted_labels == true_labels
+    )
+
+    return {
+
+        "accuracy": float(accuracy),
+
+        "predictive_entropy": float(
+            np.mean(entropy)
+        ),
+
+        "normalized_entropy": float(
+            np.mean(normalized_entropy)
+        ),
+
+        "prediction_confidence": float(
+            np.mean(confidence)
+        ),
+
+        "true_class_confidence": float(
+            np.mean(true_class_confidence)
+        ),
+
+        "prediction_margin": float(
+            np.mean(prediction_margin)
+        )
+
+    }
+
+# ============================================================
+# 6. OCCLUSION-BASED COMPREHENSIVENESS PROXY
+# ============================================================
+
+def block10_comprehensiveness(
+    model,
+    images,
+    probabilities,
+    max_samples=30
+):
+
+    """
+    Estimates comprehensiveness using occlusion sensitivity.
+
+    Procedure:
+      1. Obtain the original predicted-class probability.
+      2. Mask image patches one at a time.
+      3. Rank patches by their effect on confidence.
+      4. Remove the most influential patches.
+      5. Measure the confidence reduction.
+
+    This is an occlusion-derived proxy, not a direct
+    evaluation of Grad-CAM, LIME or SHAP maps.
+    """
+
+    scores = []
+
+    sample_count = min(
+        len(images),
+        max_samples
+    )
+
+    grid_size = BLOCK10_OCCLUSION_GRID
+
+    patch_fraction = BLOCK10_OCCLUSION_FRACTION
+
+    for sample_index in range(sample_count):
+
+        image = np.asarray(
+            images[sample_index],
+            dtype=np.float32
+        )
+
+        original_probability = probabilities[
+            sample_index
+        ]
+
+        target_class = int(
+            np.argmax(original_probability)
+        )
+
+        original_confidence = float(
+            original_probability[target_class]
+        )
+
+        height, width = image.shape[:2]
+
+        patch_height = max(
+            1,
+            height // grid_size
+        )
+
+        patch_width = max(
+            1,
+            width // grid_size
+        )
+
+        # Use the image mean as the neutral occlusion value.
+        replacement_value = float(
+            np.mean(image)
+        )
+
+        patch_effects = []
+
+        # Measure the effect of masking each patch.
+        for row in range(grid_size):
+
+            for column in range(grid_size):
+
+                y1 = row * patch_height
+
+                y2 = (
+                    height
+                    if row == grid_size - 1
+                    else min(
+                        (row + 1) * patch_height,
+                        height
+                    )
+                )
+
+                x1 = column * patch_width
+
+                x2 = (
+                    width
+                    if column == grid_size - 1
+                    else min(
+                        (column + 1) * patch_width,
+                        width
+                    )
+                )
+
+                occluded_image = image.copy()
+
+                occluded_image[
+                    y1:y2,
+                    x1:x2,
+                    :
+                ] = replacement_value
+
+                occluded_probability = block10_predict(
+                    model,
+                    np.expand_dims(
+                        occluded_image,
+                        axis=0
+                    )
+                )[0, target_class]
+
+                confidence_drop = (
+                    original_confidence
+                    - float(occluded_probability)
+                )
+
+                patch_effects.append({
+
+                    "drop": confidence_drop,
+
+                    "coordinates": (
+                        y1,
+                        y2,
+                        x1,
+                        x2
+                    )
+
+                })
+
+        # Rank patches by their influence on the prediction.
+        patch_effects.sort(
+            key=lambda item: item["drop"],
+            reverse=True
+        )
+
+        total_patches = len(
+            patch_effects
+        )
+
+        number_to_remove = max(
+            1,
+            int(np.ceil(
+                total_patches * patch_fraction
+            ))
+        )
+
+        # Remove the most influential patches together.
+        comprehensiveness_image = image.copy()
+
+        for patch in patch_effects[:number_to_remove]:
+
+            y1, y2, x1, x2 = patch["coordinates"]
+
+            comprehensiveness_image[
+                y1:y2,
+                x1:x2,
+                :
+            ] = replacement_value
+
+        final_probability = block10_predict(
+            model,
+            np.expand_dims(
+                comprehensiveness_image,
+                axis=0
+            )
+        )[0, target_class]
+
+        comprehensiveness_score = (
+            original_confidence
+            - float(final_probability)
+        )
+
+        scores.append(
+            comprehensiveness_score
+        )
+
+    if not scores:
+
+        return np.nan
+
+    return float(
+        np.mean(scores)
+    )
+
+# ============================================================
+# 7. COLLECT TEST IMAGES AND LABELS
+# ============================================================
+
+def block10_collect_test_samples(dataset_data):
+
+    test_dataset = dataset_data["test"]
+
+    images_list = []
+
+    labels_list = []
+
+    for images, labels in test_dataset:
+
+        images_array = images.numpy()
+
+        labels_array = labels.numpy()
+
+        for image, label in zip(
+            images_array,
+            labels_array
+        ):
+
+            images_list.append(
+                image
+            )
+
+            labels_list.append(
+                int(label)
+            )
+
+            if len(images_list) >= BLOCK10_MAX_TEST_SAMPLES:
+
+                break
+
+        if len(images_list) >= BLOCK10_MAX_TEST_SAMPLES:
+
+            break
+
+    if not images_list:
+
+        raise ValueError(
+            "No test images were collected for Block 10."
+        )
+
+    return (
+
+        np.asarray(
+            images_list,
+            dtype=np.float32
+        ),
+
+        np.asarray(
+            labels_list,
+            dtype=np.int64
+        )
+
+    )
+
+# ============================================================
+# 8. EVALUATE ALL FIVE MODEL CONFIGURATIONS
+# ============================================================
+
+def block10_evaluate_all_models():
+
+    all_results = []
+
+    print("\n" + "=" * 85)
+
+    print(
+        "BLOCK 10: UNCERTAINTY, CONFIDENCE "
+        "AND COMPREHENSIVENESS EVALUATION"
+    )
+
+    print("=" * 85)
+
+    for dataset_name, dataset_data in PREPARED_DATASETS.items():
+
+        print("\nDATASET:", dataset_name.upper())
+
+        images, true_labels = block10_collect_test_samples(
+            dataset_data
+        )
+
+        print(
+            "Test samples used:",
+            len(images)
+        )
+
+        for model_name in MODEL_ORDER:
+
+            print(
+                "\nEvaluating:",
+                model_name
+            )
+
+            model = block10_get_model(
+                dataset_name,
+                model_name
+            )
+
+            probabilities = block10_predict(
+                model,
+                images
+            )
+
+            if probabilities.shape[0] != len(true_labels):
+
+                raise ValueError(
+                    f"Prediction count mismatch for "
+                    f"{dataset_name}/{model_name}."
+                )
+
+            if (
+                probabilities.shape[1]
+                <= int(np.max(true_labels))
+            ):
+
+                raise ValueError(
+                    f"Number of output classes does not match "
+                    f"the encoded labels for {dataset_name}/"
+                    f"{model_name}."
+                )
+
+            metrics = block10_uncertainty_metrics(
+                probabilities,
+                true_labels
+            )
+
+            comprehensiveness = block10_comprehensiveness(
+                model=model,
+                images=images,
+                probabilities=probabilities,
+                max_samples=BLOCK10_MAX_TEST_SAMPLES
+            )
+
+            result = {
+
+                "dataset": dataset_name,
+
+                "model": model_name,
+
+                "model_description": MODEL_CONFIGS[
+                    model_name
+                ]["architecture"],
+
+                "explainability_method": MODEL_CONFIGS[
+                    model_name
+                ]["explainability"],
+
+                "number_of_samples": len(images),
+
+                **metrics,
+
+                "occlusion_comprehensiveness_proxy": (
+                    comprehensiveness
+                )
+
+            }
+
+            all_results.append(
+                result
+            )
+
+            print(
+                "Accuracy:",
+                f"{metrics['accuracy']:.4f}"
+            )
+
+            print(
+                "Entropy:",
+                f"{metrics['predictive_entropy']:.4f}"
+            )
+
+            print(
+                "Confidence:",
+                f"{metrics['prediction_confidence']:.4f}"
+            )
+
+            print(
+                "Comprehensiveness proxy:",
+                f"{comprehensiveness:.4f}"
+            )
+
+    return pd.DataFrame(
+        all_results
+    )
+
+# ============================================================
+# 9. SAVE BLOCK 10 METRICS
+# ============================================================
+
+def block10_save_metrics(metrics_df):
+
+    Path(TABLE_DIR).mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    output_path = (
+        Path(TABLE_DIR)
+        / "block10_uncertainty_confidence_comprehensiveness.csv"
+    )
+
+    metrics_df.to_csv(
+        output_path,
+        index=False
+    )
+
+    print(
+        "\nBlock 10 metrics saved to:",
+        output_path
+    )
+
+    return output_path
+
+# ============================================================
+# 10. PLOT METRIC COMPARISONS
+# ============================================================
+
+def block10_plot_comparisons(metrics_df):
+
+    Path(FIGURE_DIR).mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    metrics_to_plot = [
+
+        (
+            "predictive_entropy",
+            "Predictive Entropy",
+            "Lower is better"
+        ),
+
+        (
+            "normalized_entropy",
+            "Normalized Entropy",
+            "Lower is better"
+        ),
+
+        (
+            "prediction_confidence",
+            "Prediction Confidence",
+            "Higher is better"
+        ),
+
+        (
+            "true_class_confidence",
+            "True-Class Confidence",
+            "Higher is better"
+        ),
+
+        (
+            "prediction_margin",
+            "Prediction Margin",
+            "Higher is better"
+        ),
+
+        (
+            "occlusion_comprehensiveness_proxy",
+            "Occlusion Comprehensiveness Proxy",
+            "Higher is better"
+        )
+
+    ]
+
+    for dataset_name in metrics_df["dataset"].unique():
+
+        dataset_df = metrics_df[
+            metrics_df["dataset"] == dataset_name
+        ].copy()
+
+        dataset_df["model"] = pd.Categorical(
+            dataset_df["model"],
+            categories=MODEL_ORDER,
+            ordered=True
+        )
+
+        dataset_df = dataset_df.sort_values(
+            "model"
+        )
+
+        figure, axes = plt.subplots(
+            2,
+            3,
+            figsize=(22, 12)
+        )
+
+        axes = axes.flatten()
+
+        for axis, metric_info in zip(
+            axes,
+            metrics_to_plot
+        ):
+
+            metric_name, title, direction = metric_info
+
+            sns.barplot(
+                data=dataset_df,
+                x="model",
+                y=metric_name,
+                ax=axis
+            )
+
+            axis.set_title(
+                f"{title}\n({direction})",
+                fontsize=12,
+                fontweight="bold"
+            )
+
+            axis.set_xlabel(
+                "Model configuration"
+            )
+
+            axis.set_ylabel(
+                metric_name.replace("_", " ").title()
+            )
+
+            axis.tick_params(
+                axis="x",
+                rotation=35
+            )
+
+            axis.grid(
+                axis="y",
+                linestyle="--",
+                alpha=0.35
+            )
+
+        figure.suptitle(
+            f"{dataset_name.upper()}: "
+            "Uncertainty, Confidence and Comprehensiveness",
+            fontsize=16,
+            fontweight="bold"
+        )
+
+        figure.tight_layout(
+            rect=[0, 0, 1, 0.95]
+        )
+
+        figure_path = (
+            Path(FIGURE_DIR)
+            / f"{dataset_name}_block10_metric_comparison.png"
+        )
+
+        figure.savefig(
+            figure_path,
+            dpi=300,
+            bbox_inches="tight"
+        )
+
+        plt.close(
+            figure
+        )
+
+        print(
+            "Comparison figure saved:",
+            figure_path
+        )
+
+    # Combined heatmap for both datasets.
+    for dataset_name in metrics_df["dataset"].unique():
+
+        dataset_df = metrics_df[
+            metrics_df["dataset"] == dataset_name
+        ].set_index("model")
+
+        heatmap_columns = [
+            "predictive_entropy",
+            "normalized_entropy",
+            "prediction_confidence",
+            "true_class_confidence",
+            "prediction_margin",
+            "occlusion_comprehensiveness_proxy"
+        ]
+
+        heatmap_data = dataset_df[
+            heatmap_columns
+        ].reindex(
+            MODEL_ORDER
+        )
+
+        plt.figure(
+            figsize=(14, 7)
+        )
+
+        sns.heatmap(
+            heatmap_data,
+            annot=True,
+            fmt=".3f",
+            cmap="YlGnBu",
+            linewidths=0.5
+        )
+
+        plt.title(
+            f"{dataset_name.upper()}: "
+            "Block 10 Metric Heatmap",
+            fontsize=15,
+            fontweight="bold"
+        )
+
+        plt.xlabel(
+            "Evaluation metric"
+        )
+
+        plt.ylabel(
+            "Model configuration"
+        )
+
+        plt.xticks(
+            rotation=30,
+            ha="right"
+        )
+
+        plt.tight_layout()
+
+        heatmap_path = (
+            Path(FIGURE_DIR)
+            / f"{dataset_name}_block10_metric_heatmap.png"
+        )
+
+        plt.savefig(
+            heatmap_path,
+            dpi=300,
+            bbox_inches="tight"
+        )
+
+        plt.close()
+
+        print(
+            "Heatmap saved:",
+            heatmap_path
+        )
+
+# ============================================================
+# 11. EXECUTE BLOCK 10
+# ============================================================
+
+def execute_block_10():
+
+    print("\n" + "#" * 85)
+
+    print(
+        "EXECUTING BLOCK 10"
+    )
+
+    print("#" * 85)
+
+    if not PREPARED_DATASETS:
+
+        raise RuntimeError(
+            "PREPARED_DATASETS is empty. "
+            "Execute Block 2 first."
+        )
+
+    if not TRAINED_MODELS:
+
+        raise RuntimeError(
+            "TRAINED_MODELS is empty. "
+            "Execute model training in Block 9 first."
+        )
+
+    metrics_df = block10_evaluate_all_models()
+
+    if metrics_df.empty:
+
+        raise RuntimeError(
+            "Block 10 did not produce any evaluation results."
+        )
+
+    block10_save_metrics(
+        metrics_df
+    )
+
+    block10_plot_comparisons(
+        metrics_df
+    )
+
+    global BLOCK10_RESULTS
+
+    BLOCK10_RESULTS = metrics_df.to_dict(
+        orient="records"
+    )
+
+    print("\n" + "=" * 85)
+
+    print(
+        "BLOCK 10 COMPLETED SUCCESSFULLY"
+    )
+
+    print("=" * 85)
+
+    print("\nMETRIC SUMMARY")
+
+    print(
+        metrics_df.to_string(
+            index=False
+        )
+    )
+
+    print("\nFigures directory:", FIGURE_DIR)
+
+    print("Tables directory:", TABLE_DIR)
+
+    return metrics_df
+
+# ============================================================
+# 12. RUN BLOCK 10
+# ============================================================
+
+# Run this after Block 9 has completed successfully.
+
+BLOCK10_METRICS = execute_block_10()
+
+# ============================================================
+# END OF BLOCK 10
+# ============================================================
