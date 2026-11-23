@@ -1,0 +1,868 @@
+E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Scripts\python.exe E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py 
+2026-11-23 13:27:16.092353: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
+
+2026-11-23 13:27:32,755 | INFO | TensorFlow version: 2.15.1
+2026-11-23 13:27:32,757 | INFO | Keras version: 2.15.0
+2026-11-23 13:27:32,758 | INFO | Python version: 3.11.5 (tags/v3.11.5:cce6ba9, Aug 24 2023, 14:38:34) [MSC v.1936 64 bit (AMD64)]
+2026-11-23 13:27:32,786 | INFO | Operating system: Windows-10-10.0.22621-SP0
+2026-11-23 13:27:32,787 | INFO | Execution hardware: CPU
+2026-11-23 13:27:32,788 | INFO | Available GPU devices: []
+2026-11-23 13:27:32,788 | INFO | Available CPU devices: [PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')]
+2026-11-23 13:27:32,788 | INFO | Configuration validation completed successfully.
+2026-11-23 13:27:32,790 | INFO | =================================================================
+2026-11-23 13:27:32,792 | INFO | DATASET MANIFEST VALIDATION
+2026-11-23 13:27:32,792 | INFO | =================================================================
+2026-11-23 13:27:32,793 | INFO | Rice Leaf Disease manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\rice\dataset_manifest.json
+2026-11-23 13:27:32,793 | INFO | Rice Leaf Disease manifest exists: YES
+2026-11-23 13:27:32,794 | INFO | Sugarcane Leaf Disease manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\sugarcane\dataset_manifest.json
+2026-11-23 13:27:32,794 | INFO | Sugarcane Leaf Disease manifest exists: YES
+2026-11-23 13:27:32,794 | INFO | Both dataset manifests were located successfully.
+2026-11-23 13:27:32,798 | INFO | Rice Leaf Disease manifest loaded successfully.
+2026-11-23 13:27:32,799 | INFO | Manifest root type: dict
+2026-11-23 13:27:32,846 | INFO | Sugarcane Leaf Disease manifest loaded successfully.
+2026-11-23 13:27:32,846 | INFO | Manifest root type: dict
+
+===========================================================================
+RICE AND SUGARCANE DISEASE CLASSIFICATION
+===========================================================================
+
+PROJECT INFORMATION
+---------------------------------------------------------------------------
+Project directory: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3
+Experiment ID: 20261123_132732
+Python: 3.11.5
+TensorFlow: 2.15.1
+Keras: 2.15.0
+Hardware: CPU
+Deterministic operations: True
+
+DATASETS
+---------------------------------------------------------------------------
+
+Dataset: Rice Leaf Disease
+Root: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\rice
+Manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\rice\dataset_manifest.json
+Manifest exists: True
+
+Dataset: Sugarcane Leaf Disease
+Root: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\sugarcane
+Manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\sugarcane\dataset_manifest.json
+Manifest exists: True
+
+IMAGE CONFIGURATION
+---------------------------------------------------------------------------
+Image dimensions: (224, 224)
+Image channels: 3
+Color mode: RGB
+
+TRAINING CONFIGURATION
+---------------------------------------------------------------------------
+Batch size: 16
+Epochs: 100
+Learning rate: 0.0001
+Weight decay: 0.0001
+Optimizer: AdamW
+Train / validation / test: 70% / 15% / 15%
+
+PROPOSED MODEL AND BASELINES
+---------------------------------------------------------------------------
+Ours: CNN + Multi-Head Attention | Explanation: Grad-CAM
+Baseline 1: EfficientNetB5 | Explanation: Grad-CAM
+Baseline 2: EfficientNetB5 | Explanation: LIME
+Baseline 3: VGG16 + VGG19 + ResNet101V2 + InceptionV3 | Explanation: LIME
+Baseline 4: ResNet-9 | Explanation: SHAP
+
+OUTPUT DIRECTORIES
+---------------------------------------------------------------------------
+Models: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\models
+Figures: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\figures
+Tables: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\tables
+Logs: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\logs
+Explainability: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\explainability
+
+===========================================================================
+BLOCK 1 CONFIGURATION COMPLETED
+===========================================================================
+2026-11-23 13:27:32,851 | INFO | BLOCK 1 INITIALIZATION COMPLETED SUCCESSFULLY.
+
+================================================================================
+BLOCK 2: DATASET INSPECTION AND PREPARATION
+================================================================================
+
+================================================================================
+DATASET MANIFEST STRUCTURE INSPECTION
+================================================================================
+
+DATASET: RICE
+--------------------------------------------------------------------------------
+Dictionary with 9 keys
+- 'dataset_name': str
+  Value preview: 'Paddy Doctor'
+- 'repository': str
+  Value preview: 'Project-AgML/paddy_disease_classification'
+- 'total_images': int
+- 'total_classes': int
+- 'class_names': list
+  List with 10 elements
+  - Element 0: str
+    Value: 'bacterial_leaf_blight'
+  - Element 1: str
+    Value: 'bacterial_leaf_streak'
+  - Element 2: str
+    Value: 'bacterial_panicle_blight'
+  - Element 3: str
+    Value: 'blast'
+  - Element 4: str
+    Value: 'brown_spot'
+- 'class_counts': dict
+  Dictionary with 10 keys
+  - 'bacterial_leaf_blight': int
+  - 'bacterial_leaf_streak': int
+  - 'bacterial_panicle_blight': int
+  - 'blast': int
+  - 'brown_spot': int
+  - 'dead_heart': int
+  - 'downy_mildew': int
+  - 'hispa': int
+  - 'normal': int
+  - 'tungro': int
+- 'image_format': str
+  Value preview: 'JPEG'
+- 'image_mode': str
+  Value preview: 'RGB'
+- 'complete': bool
+
+JSON CONTENT PREVIEW
+--------------------------------------------------------------------------------
+{
+  "dataset_name": "Paddy Doctor",
+  "repository": "Project-AgML/paddy_disease_classification",
+  "total_images": 10407,
+  "total_classes": 10,
+  "class_names": [
+    "bacterial_leaf_blight",
+    "bacterial_leaf_streak",
+    "bacterial_panicle_blight",
+    "blast",
+    "brown_spot",
+    "dead_heart",
+    "downy_mildew",
+    "hispa",
+    "normal",
+    "tungro"
+  ],
+  "class_counts": {
+    "bacterial_leaf_blight": 479,
+    "bacterial_leaf_streak": 380,
+    "bacterial_panicle_blight": 337,
+    "blast": 1738,
+    "brown_spot": 965,
+    "dead_heart": 1442,
+    "downy_mildew": 620,
+    "hispa": 1594,
+    "normal": 1764,
+    "tungro": 1088
+  },
+  "image_format": "JPEG",
+  "image_mode": "RGB",
+  "complete": true
+}
+
+
+
+DATASET: SUGARCANE
+--------------------------------------------------------------------------------
+Dictionary with 9 keys
+- 'dataset_name': str
+  Value preview: 'Project-AgML/sugarcane_leaf_disease_classification'
+- 'expected_images': int
+- 'extracted_images': int
+- 'expected_classes': int
+- 'detected_classes': int
+- 'invalid_images': int
+- 'class_names': list
+  List with 11 elements
+  - Element 0: str
+    Value: 'Banded Chlorosis'
+  - Element 1: str
+    Value: 'Brown Spot'
+  - Element 2: str
+    Value: 'BrownRust'
+  - Element 3: str
+    Value: 'Dried'
+  - Element 4: str
+    Value: 'Grassy shoot'
+- 'class_distribution': dict
+  Dictionary with 11 keys
+  - 'Dried': int
+  - 'Yellow Leaf': int
+  - 'Banded Chlorosis': int
+  - 'Sett Rot': int
+  - 'Healthy': int
+  - 'Grassy shoot': int
+  - 'Pokkah Boeng': int
+  - 'Viral Disease': int
+  - 'BrownRust': int
+  - 'Smut': int
+  - 'Brown Spot': int
+- 'image_records': list
+  List with 6748 elements
+  - Element 0: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000000.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000000.jpg'
+  - Element 1: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000001.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000001.jpg'
+  - Element 2: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000002.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000002.jpg'
+  - Element 3: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000003.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000003.jpg'
+  - Element 4: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000004.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000004.jpg'
+
+JSON CONTENT PREVIEW
+--------------------------------------------------------------------------------
+{
+  "dataset_name": "Project-AgML/sugarcane_leaf_disease_classification",
+  "expected_images": 6748,
+  "extracted_images": 6748,
+  "expected_classes": 11,
+  "detected_classes": 11,
+  "invalid_images": 0,
+  "class_names": [
+    "Banded Chlorosis",
+    "Brown Spot",
+    "BrownRust",
+    "Dried",
+    "Grassy shoot",
+    "Healthy",
+    "Pokkah Boeng",
+    "Sett Rot",
+    "Smut",
+    "Viral Disease",
+    "Yellow Leaf"
+  ],
+  "class_distribution": {
+    "Dried": 343,
+    "Yellow Leaf": 1194,
+    "Banded Chlorosis": 471,
+    "Sett Rot": 652,
+    "Healthy": 430,
+    "Grassy shoot": 346,
+    "Pokkah Boeng": 297,
+    "Viral Disease": 663,
+    "BrownRust": 314,
+    "Smut": 316,
+    "Brown Spot": 1722
+  },
+  "image_records": [
+    {
+      "filename": "train_000000.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000000.jpg"
+    },
+    {
+      "filename": "train_000001.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000001.jpg"
+    },
+    {
+      "filename": "train_000002.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000002.jpg"
+    },
+    {
+      "filename": "train_000003.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000003.jpg"
+    },
+    {
+      "filename": "train_000004.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000004.jpg"
+    },
+    {
+      "filename": "train_000005.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000005.jpg"
+    },
+    {
+      "filename": "train_000006.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000006.jpg"
+    },
+    {
+      "filename": "train_000007.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000007.jpg"
+    },
+    {
+      "filename": "train_000008.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000008.jpg"
+    },
+    {
+      "filename": "train_000009.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000009.jpg"
+    },
+    {
+      "filename": "train_000010.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000010.jpg"
+    },
+    {
+      "filename": "train_000011.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000011.jpg"
+    },
+    {
+      "filename": "train_000012.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000012.jpg"
+    },
+    {
+      "filename": "train_000013.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000013.jpg"
+    },
+    {
+      "filename": "train_000014.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000014.jpg"
+    },
+    {
+      "filename": "train_000015.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000015.jpg"
+    },
+    {
+      "filename": "train_000016.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000016.jpg"
+    },
+    {
+      "filename": "train_000017.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000017.jpg"
+    },
+    {
+      "filename": "train_000018.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000018.jpg"
+    },
+    {
+      "filename": "train_000019.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000019.jpg"
+    },
+    {
+      "filename": "train_000020.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000020.jpg"
+    },
+    {
+      "filename": "train_000021.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000021.jpg"
+    },
+    {
+      "filename": "train_000022.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000022.jpg"
+    },
+    {
+      "filename": "train_000023.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000023.jpg"
+    },
+    {
+      "filename": "train_000024.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000024.jpg"
+    },
+    {
+      "filename": "train_000025.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000025.jpg"
+    },
+    {
+      "filename": "train_000026.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000026.jpg"
+    },
+    {
+      "filename": "train_000027.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000027.jpg"
+    },
+    {
+      "filename": "train_000028.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000028.jpg"
+    },
+    {
+      "filename": "train_000029.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000029.jpg"
+    },
+    {
+      "filename": "train_000030.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000030.jpg"
+    },
+    {
+      "filename": "train_000031.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000031.jpg"
+    },
+    {
+      "filename": "train_000032.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000032.jpg"
+    },
+    {
+      "filename": "train_000033.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000033.jpg"
+    },
+    {
+      "filename": "train_000034.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000034.jpg"
+    },
+    {
+      "filename": "train_000035.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000035.jpg"
+    },
+    {
+      "filename": "train_000036.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000036.jpg"
+    },
+    {
+      "filename": "train_000037.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000037.jpg"
+    },
+    {
+      "filename": "train_000038.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000038.jpg"
+    },
+    {
+      "filename": "train_000039.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000039.jpg"
+    },
+    {
+      "filename": "train_000040.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000040.jpg"
+    },
+    {
+      "filename": "train_000041.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000041.jpg"
+    },
+    {
+      "filename": "train_000042.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000042.jpg"
+    },
+    {
+      "filename": "train_000043.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000043.jpg"
+    },
+    {
+      "filename": "train_000044.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000044.jpg"
+    },
+    {
+      "filename": "train_000045.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000045.jpg"
+    },
+    {
+      "filename": "train_000046.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000046.jpg"
+    },
+    {
+      "filename": "train_000047.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\d
+
+... JSON preview truncated ...
+
+
+
+===========================================================================
+PREPARING: RICE LEAF DISEASE
+===========================================================================
+2026-11-23 13:27:33,000 | WARNING | No usable image records extracted from rice manifest.
+Trying directory-based discovery.
+
+Validating images for rice...
+Valid images: 10407
+Invalid images: 0
+Usable images: 10407
+Number of classes: 10
+
+Class distribution:
+label
+normal                      1764
+blast                       1738
+hispa                       1594
+dead_heart                  1442
+tungro                      1088
+brown_spot                   965
+downy_mildew                 620
+bacterial_leaf_blight        479
+bacterial_leaf_streak        380
+bacterial_panicle_blight     337
+
+===========================================================================
+PREPARING: SUGARCANE LEAF DISEASE
+===========================================================================
+2026-11-23 13:27:47,570 | WARNING | No usable image records extracted from sugarcane manifest.
+Trying directory-based discovery.
+
+Validating images for sugarcane...
+Valid images: 13496
+Invalid images: 0
+Usable images: 13496
+Number of classes: 11
+
+Class distribution:
+label
+Brown Spot          3444
+Yellow Leaf         2388
+Viral Disease       1326
+Sett Rot            1304
+Banded Chlorosis     942
+Healthy              860
+Grassy shoot         692
+Dried                686
+Smut                 632
+BrownRust            628
+Pokkah Boeng         594
+
+Dataset metadata saved to: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\tables\dataset_metadata.json
+
+===========================================================================
+ENCODING AND SPLITTING: RICE
+===========================================================================
+
+RICE SPLIT SUMMARY
+------------------------------------------------------------
+Training:     7284 (69.99%)
+Validation:   1561 (15.00%)
+Testing:      1562 (15.01%)
+2026-11-23 13:28:03.411363: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE SSE2 SSE3 SSE4.1 SSE4.2 AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Number of classes: 10
+Class mapping: {'bacterial_leaf_blight': 0, 'bacterial_leaf_streak': 1, 'bacterial_panicle_blight': 2, 'blast': 3, 'brown_spot': 4, 'dead_heart': 5, 'downy_mildew': 6, 'hispa': 7, 'normal': 8, 'tungro': 9}
+TensorFlow datasets created successfully.
+
+===========================================================================
+ENCODING AND SPLITTING: SUGARCANE
+===========================================================================
+
+SUGARCANE SPLIT SUMMARY
+------------------------------------------------------------
+Training:     9447 (70.00%)
+Validation:   2024 (15.00%)
+Testing:      2025 (15.00%)
+Number of classes: 11
+Class mapping: {'Banded Chlorosis': 0, 'Brown Spot': 1, 'BrownRust': 2, 'Dried': 3, 'Grassy shoot': 4, 'Healthy': 5, 'Pokkah Boeng': 6, 'Sett Rot': 7, 'Smut': 8, 'Viral Disease': 9, 'Yellow Leaf': 10}
+TensorFlow datasets created successfully.
+
+================================================================================
+BLOCK 2 EXECUTION SUMMARY
+================================================================================
+
+RICE
+Classes: 10
+Training images: 7284
+Validation images: 1561
+Testing images: 1562
+Training image batch shape: (16, 224, 224, 3)
+Training label batch shape: (16,)
+
+SUGARCANE
+Classes: 11
+Training images: 9447
+Validation images: 2024
+Testing images: 2025
+Training image batch shape: (16, 224, 224, 3)
+Training label batch shape: (16,)
+
+BLOCK 2 COMPLETED
+
+=====================================================================================
+STARTING COMPLETE PLANT DISEASE CLASSIFICATION EXPERIMENT
+=====================================================================================
+Figure directory: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\figures
+Table directory: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\tables
+
+Available datasets: ['rice', 'sugarcane']
+
+#####################################################################################
+STARTING EXPERIMENT: RICE
+#####################################################################################
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\backend.py:1398: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+2026-11-23 13:28:04,540 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\backend.py:1398: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+2026-11-23 13:28:05,006 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\layers\normalization\batch_normalization.py:979: The name tf.nn.fused_batch_norm is deprecated. Please use tf.compat.v1.nn.fused_batch_norm instead.
+
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\layers\normalization\batch_normalization.py:979: The name tf.nn.fused_batch_norm is deprecated. Please use tf.compat.v1.nn.fused_batch_norm instead.
+
+Epoch 1/100
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\utils\tf_utils.py:492: The name tf.ragged.RaggedTensorValue is deprecated. Please use tf.compat.v1.ragged.RaggedTensorValue instead.
+
+2026-11-23 13:28:06,226 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\utils\tf_utils.py:492: The name tf.ragged.RaggedTensorValue is deprecated. Please use tf.compat.v1.ragged.RaggedTensorValue instead.
+
+2026-11-23 13:28:07,804 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\engine\base_layer_utils.py:384: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\engine\base_layer_utils.py:384: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+456/456 [==============================] - ETA: 0s - loss: 1.9979 - accuracy: 0.2705
+Epoch 1: val_loss improved from inf to 2.39413, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 2057s 4s/step - loss: 1.9979 - accuracy: 0.2705 - val_loss: 2.3941 - val_accuracy: 0.2069 - lr: 1.0000e-04
+Epoch 2/100
+456/456 [==============================] - ETA: 0s - loss: 1.6424 - accuracy: 0.4025
+Epoch 2: val_loss improved from 2.39413 to 1.77011, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1886s 4s/step - loss: 1.6424 - accuracy: 0.4025 - val_loss: 1.7701 - val_accuracy: 0.3677 - lr: 1.0000e-04
+Epoch 3/100
+456/456 [==============================] - ETA: 0s - loss: 1.3994 - accuracy: 0.4970
+Epoch 3: val_loss did not improve from 1.77011
+456/456 [==============================] - 1794s 4s/step - loss: 1.3994 - accuracy: 0.4970 - val_loss: 2.1307 - val_accuracy: 0.3440 - lr: 1.0000e-04
+Epoch 4/100
+456/456 [==============================] - ETA: 0s - loss: 1.2370 - accuracy: 0.5599
+Epoch 4: val_loss improved from 1.77011 to 1.72515, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1792s 4s/step - loss: 1.2370 - accuracy: 0.5599 - val_loss: 1.7252 - val_accuracy: 0.4222 - lr: 1.0000e-04
+Epoch 5/100
+456/456 [==============================] - ETA: 0s - loss: 1.1058 - accuracy: 0.6053
+Epoch 5: val_loss improved from 1.72515 to 1.63806, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1788s 4s/step - loss: 1.1058 - accuracy: 0.6053 - val_loss: 1.6381 - val_accuracy: 0.4504 - lr: 1.0000e-04
+Epoch 6/100
+456/456 [==============================] - ETA: 0s - loss: 1.0227 - accuracy: 0.6332
+Epoch 6: val_loss improved from 1.63806 to 1.25143, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1797s 4s/step - loss: 1.0227 - accuracy: 0.6332 - val_loss: 1.2514 - val_accuracy: 0.5637 - lr: 1.0000e-04
+Epoch 7/100
+456/456 [==============================] - ETA: 0s - loss: 0.9339 - accuracy: 0.6719
+Epoch 7: val_loss did not improve from 1.25143
+456/456 [==============================] - 1789s 4s/step - loss: 0.9339 - accuracy: 0.6719 - val_loss: 1.9302 - val_accuracy: 0.3959 - lr: 1.0000e-04
+Epoch 8/100
+456/456 [==============================] - ETA: 0s - loss: 0.8807 - accuracy: 0.6948
+Epoch 8: val_loss did not improve from 1.25143
+456/456 [==============================] - 1780s 4s/step - loss: 0.8807 - accuracy: 0.6948 - val_loss: 1.4111 - val_accuracy: 0.5548 - lr: 1.0000e-04
+Epoch 9/100
+456/456 [==============================] - ETA: 0s - loss: 0.8150 - accuracy: 0.7135
+Epoch 9: val_loss improved from 1.25143 to 1.16463, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1784s 4s/step - loss: 0.8150 - accuracy: 0.7135 - val_loss: 1.1646 - val_accuracy: 0.5855 - lr: 1.0000e-04
+Epoch 10/100
+456/456 [==============================] - ETA: 0s - loss: 0.7474 - accuracy: 0.7320
+Epoch 10: val_loss did not improve from 1.16463
+456/456 [==============================] - 1781s 4s/step - loss: 0.7474 - accuracy: 0.7320 - val_loss: 1.7596 - val_accuracy: 0.4914 - lr: 1.0000e-04
+Epoch 11/100
+456/456 [==============================] - ETA: 0s - loss: 0.7282 - accuracy: 0.7473
+Epoch 11: val_loss improved from 1.16463 to 0.91816, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1853s 4s/step - loss: 0.7282 - accuracy: 0.7473 - val_loss: 0.9182 - val_accuracy: 0.6784 - lr: 1.0000e-04
+Epoch 12/100
+456/456 [==============================] - ETA: 0s - loss: 0.6785 - accuracy: 0.7630
+Epoch 12: val_loss did not improve from 0.91816
+456/456 [==============================] - 1920s 4s/step - loss: 0.6785 - accuracy: 0.7630 - val_loss: 1.0880 - val_accuracy: 0.6361 - lr: 1.0000e-04
+Epoch 13/100
+456/456 [==============================] - ETA: 0s - loss: 0.6483 - accuracy: 0.7742
+Epoch 13: val_loss improved from 0.91816 to 0.87198, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 2020s 4s/step - loss: 0.6483 - accuracy: 0.7742 - val_loss: 0.8720 - val_accuracy: 0.6906 - lr: 1.0000e-04
+Epoch 14/100
+456/456 [==============================] - ETA: 0s - loss: 0.6022 - accuracy: 0.7897
+Epoch 14: val_loss did not improve from 0.87198
+456/456 [==============================] - 1869s 4s/step - loss: 0.6022 - accuracy: 0.7897 - val_loss: 0.9627 - val_accuracy: 0.6694 - lr: 1.0000e-04
+Epoch 15/100
+456/456 [==============================] - ETA: 0s - loss: 0.5662 - accuracy: 0.8053
+Epoch 15: val_loss did not improve from 0.87198
+456/456 [==============================] - 1881s 4s/step - loss: 0.5662 - accuracy: 0.8053 - val_loss: 0.9894 - val_accuracy: 0.6618 - lr: 1.0000e-04
+Epoch 16/100
+456/456 [==============================] - ETA: 0s - loss: 0.5517 - accuracy: 0.8037
+Epoch 16: val_loss did not improve from 0.87198
+456/456 [==============================] - 2047s 4s/step - loss: 0.5517 - accuracy: 0.8037 - val_loss: 0.9765 - val_accuracy: 0.6739 - lr: 1.0000e-04
+Epoch 17/100
+456/456 [==============================] - ETA: 0s - loss: 0.5277 - accuracy: 0.8123
+Epoch 17: val_loss did not improve from 0.87198
+456/456 [==============================] - 2105s 5s/step - loss: 0.5277 - accuracy: 0.8123 - val_loss: 1.0800 - val_accuracy: 0.6624 - lr: 1.0000e-04
+Epoch 18/100
+456/456 [==============================] - ETA: 0s - loss: 0.4850 - accuracy: 0.8234
+Epoch 18: val_loss did not improve from 0.87198
+
+Epoch 18: ReduceLROnPlateau reducing learning rate to 4.999999873689376e-05.
+456/456 [==============================] - 1992s 4s/step - loss: 0.4850 - accuracy: 0.8234 - val_loss: 1.0241 - val_accuracy: 0.6688 - lr: 1.0000e-04
+Epoch 19/100
+456/456 [==============================] - ETA: 0s - loss: 0.4164 - accuracy: 0.8585
+Epoch 19: val_loss improved from 0.87198 to 0.71421, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1696s 4s/step - loss: 0.4164 - accuracy: 0.8585 - val_loss: 0.7142 - val_accuracy: 0.7611 - lr: 5.0000e-05
+Epoch 20/100
+456/456 [==============================] - ETA: 0s - loss: 0.3670 - accuracy: 0.8714
+Epoch 20: val_loss did not improve from 0.71421
+456/456 [==============================] - 1676s 4s/step - loss: 0.3670 - accuracy: 0.8714 - val_loss: 0.9820 - val_accuracy: 0.7053 - lr: 5.0000e-05
+Epoch 21/100
+456/456 [==============================] - ETA: 0s - loss: 0.3502 - accuracy: 0.8762
+Epoch 21: val_loss did not improve from 0.71421
+456/456 [==============================] - 1681s 4s/step - loss: 0.3502 - accuracy: 0.8762 - val_loss: 0.7165 - val_accuracy: 0.7700 - lr: 5.0000e-05
+Epoch 22/100
+456/456 [==============================] - ETA: 0s - loss: 0.3661 - accuracy: 0.8723
+Epoch 22: val_loss did not improve from 0.71421
+456/456 [==============================] - 1677s 4s/step - loss: 0.3661 - accuracy: 0.8723 - val_loss: 0.7818 - val_accuracy: 0.7508 - lr: 5.0000e-05
+Epoch 23/100
+456/456 [==============================] - ETA: 0s - loss: 0.3665 - accuracy: 0.8671
+Epoch 23: val_loss improved from 0.71421 to 0.48669, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1701s 4s/step - loss: 0.3665 - accuracy: 0.8671 - val_loss: 0.4867 - val_accuracy: 0.8386 - lr: 5.0000e-05
+Epoch 24/100
+456/456 [==============================] - ETA: 0s - loss: 0.3395 - accuracy: 0.8786
+Epoch 24: val_loss did not improve from 0.48669
+456/456 [==============================] - 1681s 4s/step - loss: 0.3395 - accuracy: 0.8786 - val_loss: 0.8326 - val_accuracy: 0.7463 - lr: 5.0000e-05
+Epoch 25/100
+456/456 [==============================] - ETA: 0s - loss: 0.3464 - accuracy: 0.8808
+Epoch 25: val_loss did not improve from 0.48669
+456/456 [==============================] - 1677s 4s/step - loss: 0.3464 - accuracy: 0.8808 - val_loss: 1.2538 - val_accuracy: 0.6393 - lr: 5.0000e-05
+Epoch 26/100
+456/456 [==============================] - ETA: 0s - loss: 0.3177 - accuracy: 0.8870
+Epoch 26: val_loss did not improve from 0.48669
+456/456 [==============================] - 1678s 4s/step - loss: 0.3177 - accuracy: 0.8870 - val_loss: 0.5528 - val_accuracy: 0.8245 - lr: 5.0000e-05
+Epoch 27/100
+456/456 [==============================] - ETA: 0s - loss: 0.3065 - accuracy: 0.8931
+Epoch 27: val_loss did not improve from 0.48669
+456/456 [==============================] - 1675s 4s/step - loss: 0.3065 - accuracy: 0.8931 - val_loss: 0.5604 - val_accuracy: 0.8123 - lr: 5.0000e-05
+Epoch 28/100
+456/456 [==============================] - ETA: 0s - loss: 0.2981 - accuracy: 0.8915
+Epoch 28: val_loss did not improve from 0.48669
+
+Epoch 28: ReduceLROnPlateau reducing learning rate to 2.499999936844688e-05.
+456/456 [==============================] - 1681s 4s/step - loss: 0.2981 - accuracy: 0.8915 - val_loss: 0.7359 - val_accuracy: 0.7534 - lr: 5.0000e-05
+Epoch 29/100
+456/456 [==============================] - ETA: 0s - loss: 0.2613 - accuracy: 0.9088
+Epoch 29: val_loss did not improve from 0.48669
+456/456 [==============================] - 1680s 4s/step - loss: 0.2613 - accuracy: 0.9088 - val_loss: 0.5238 - val_accuracy: 0.8206 - lr: 2.5000e-05
+Epoch 30/100
+456/456 [==============================] - ETA: 0s - loss: 0.2526 - accuracy: 0.9086
+Epoch 30: val_loss improved from 0.48669 to 0.48028, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1678s 4s/step - loss: 0.2526 - accuracy: 0.9086 - val_loss: 0.4803 - val_accuracy: 0.8533 - lr: 2.5000e-05
+Epoch 31/100
+456/456 [==============================] - ETA: 0s - loss: 0.2355 - accuracy: 0.9167
+Epoch 31: val_loss did not improve from 0.48028
+456/456 [==============================] - 1698s 4s/step - loss: 0.2355 - accuracy: 0.9167 - val_loss: 0.5673 - val_accuracy: 0.8168 - lr: 2.5000e-05
+Epoch 32/100
+456/456 [==============================] - ETA: 0s - loss: 0.2388 - accuracy: 0.9149
+Epoch 32: val_loss improved from 0.48028 to 0.45627, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 1690s 4s/step - loss: 0.2388 - accuracy: 0.9149 - val_loss: 0.4563 - val_accuracy: 0.8469 - lr: 2.5000e-05
+Epoch 33/100
+456/456 [==============================] - ETA: 0s - loss: 0.2299 - accuracy: 0.9169
+Epoch 33: val_loss did not improve from 0.45627
+456/456 [==============================] - 1689s 4s/step - loss: 0.2299 - accuracy: 0.9169 - val_loss: 0.4828 - val_accuracy: 0.8430 - lr: 2.5000e-05
+Epoch 34/100
+456/456 [==============================] - ETA: 0s - loss: 0.2240 - accuracy: 0.9201
+Epoch 34: val_loss did not improve from 0.45627
+456/456 [==============================] - 1686s 4s/step - loss: 0.2240 - accuracy: 0.9201 - val_loss: 0.4715 - val_accuracy: 0.8456 - lr: 2.5000e-05
+Epoch 35/100
+456/456 [==============================] - ETA: 0s - loss: 0.2260 - accuracy: 0.9172
+Epoch 35: val_loss did not improve from 0.45627
+456/456 [==============================] - 1674s 4s/step - loss: 0.2260 - accuracy: 0.9172 - val_loss: 0.4702 - val_accuracy: 0.8450 - lr: 2.5000e-05
+Epoch 36/100
+456/456 [==============================] - ETA: 0s - loss: 0.2230 - accuracy: 0.9222
+Epoch 36: val_loss did not improve from 0.45627
+456/456 [==============================] - 1678s 4s/step - loss: 0.2230 - accuracy: 0.9222 - val_loss: 0.4790 - val_accuracy: 0.8437 - lr: 2.5000e-05
+Epoch 37/100
