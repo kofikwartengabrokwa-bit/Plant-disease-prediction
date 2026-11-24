@@ -1,0 +1,793 @@
+E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Scripts\python.exe E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py 
+2026-11-24 15:12:59.983335: I tensorflow/core/util/port.cc:113] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
+
+2026-11-24 15:13:29,064 | INFO | TensorFlow version: 2.15.1
+2026-11-24 15:13:29,065 | INFO | Keras version: 2.15.0
+2026-11-24 15:13:29,065 | INFO | Python version: 3.11.5 (tags/v3.11.5:cce6ba9, Aug 24 2023, 14:38:34) [MSC v.1936 64 bit (AMD64)]
+2026-11-24 15:13:29,083 | INFO | Operating system: Windows-10-10.0.22621-SP0
+2026-11-24 15:13:29,083 | INFO | Execution hardware: CPU
+2026-11-24 15:13:29,083 | INFO | Available GPU devices: []
+2026-11-24 15:13:29,084 | INFO | Available CPU devices: [PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')]
+2026-11-24 15:13:29,084 | INFO | Configuration validation completed successfully.
+2026-11-24 15:13:29,084 | INFO | =================================================================
+2026-11-24 15:13:29,085 | INFO | DATASET MANIFEST VALIDATION
+2026-11-24 15:13:29,085 | INFO | =================================================================
+2026-11-24 15:13:29,085 | INFO | Rice Leaf Disease manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\rice\dataset_manifest.json
+2026-11-24 15:13:29,085 | INFO | Rice Leaf Disease manifest exists: YES
+2026-11-24 15:13:29,085 | INFO | Sugarcane Leaf Disease manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\sugarcane\dataset_manifest.json
+2026-11-24 15:13:29,085 | INFO | Sugarcane Leaf Disease manifest exists: YES
+2026-11-24 15:13:29,085 | INFO | Both dataset manifests were located successfully.
+2026-11-24 15:13:29,099 | INFO | Rice Leaf Disease manifest loaded successfully.
+2026-11-24 15:13:29,100 | INFO | Manifest root type: dict
+2026-11-24 15:13:29,137 | INFO | Sugarcane Leaf Disease manifest loaded successfully.
+2026-11-24 15:13:29,137 | INFO | Manifest root type: dict
+
+===========================================================================
+RICE AND SUGARCANE DISEASE CLASSIFICATION
+===========================================================================
+
+PROJECT INFORMATION
+---------------------------------------------------------------------------
+Project directory: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3
+Experiment ID: 20261124_151329
+Python: 3.11.5
+TensorFlow: 2.15.1
+Keras: 2.15.0
+Hardware: CPU
+Deterministic operations: True
+
+DATASETS
+---------------------------------------------------------------------------
+
+Dataset: Rice Leaf Disease
+Root: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\rice
+Manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\rice\dataset_manifest.json
+Manifest exists: True
+
+Dataset: Sugarcane Leaf Disease
+Root: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\sugarcane
+Manifest: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\data\raw\sugarcane\dataset_manifest.json
+Manifest exists: True
+
+IMAGE CONFIGURATION
+---------------------------------------------------------------------------
+Image dimensions: (224, 224)
+Image channels: 3
+Color mode: RGB
+
+TRAINING CONFIGURATION
+---------------------------------------------------------------------------
+Batch size: 16
+Epochs: 1
+Learning rate: 0.0001
+Weight decay: 0.0001
+Optimizer: AdamW
+Train / validation / test: 70% / 15% / 15%
+
+PROPOSED MODEL AND BASELINES
+---------------------------------------------------------------------------
+Ours: CNN + Multi-Head Attention | Explanation: Grad-CAM
+Baseline 1: EfficientNetB5 | Explanation: Grad-CAM
+Baseline 2: EfficientNetB5 | Explanation: LIME
+Baseline 3: VGG16 + VGG19 + ResNet101V2 + InceptionV3 | Explanation: LIME
+Baseline 4: ResNet-9 | Explanation: SHAP
+
+OUTPUT DIRECTORIES
+---------------------------------------------------------------------------
+Models: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\models
+Figures: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\figures
+Tables: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\tables
+Logs: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\logs
+Explainability: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\explainability
+
+===========================================================================
+BLOCK 1 CONFIGURATION COMPLETED
+===========================================================================
+2026-11-24 15:13:29,139 | INFO | BLOCK 1 INITIALIZATION COMPLETED SUCCESSFULLY.
+
+================================================================================
+BLOCK 2: DATASET INSPECTION AND PREPARATION
+================================================================================
+
+================================================================================
+DATASET MANIFEST STRUCTURE INSPECTION
+================================================================================
+
+DATASET: RICE
+--------------------------------------------------------------------------------
+Dictionary with 9 keys
+- 'dataset_name': str
+  Value preview: 'Paddy Doctor'
+- 'repository': str
+  Value preview: 'Project-AgML/paddy_disease_classification'
+- 'total_images': int
+- 'total_classes': int
+- 'class_names': list
+  List with 10 elements
+  - Element 0: str
+    Value: 'bacterial_leaf_blight'
+  - Element 1: str
+    Value: 'bacterial_leaf_streak'
+  - Element 2: str
+    Value: 'bacterial_panicle_blight'
+  - Element 3: str
+    Value: 'blast'
+  - Element 4: str
+    Value: 'brown_spot'
+- 'class_counts': dict
+  Dictionary with 10 keys
+  - 'bacterial_leaf_blight': int
+  - 'bacterial_leaf_streak': int
+  - 'bacterial_panicle_blight': int
+  - 'blast': int
+  - 'brown_spot': int
+  - 'dead_heart': int
+  - 'downy_mildew': int
+  - 'hispa': int
+  - 'normal': int
+  - 'tungro': int
+- 'image_format': str
+  Value preview: 'JPEG'
+- 'image_mode': str
+  Value preview: 'RGB'
+- 'complete': bool
+
+JSON CONTENT PREVIEW
+--------------------------------------------------------------------------------
+{
+  "dataset_name": "Paddy Doctor",
+  "repository": "Project-AgML/paddy_disease_classification",
+  "total_images": 10407,
+  "total_classes": 10,
+  "class_names": [
+    "bacterial_leaf_blight",
+    "bacterial_leaf_streak",
+    "bacterial_panicle_blight",
+    "blast",
+    "brown_spot",
+    "dead_heart",
+    "downy_mildew",
+    "hispa",
+    "normal",
+    "tungro"
+  ],
+  "class_counts": {
+    "bacterial_leaf_blight": 479,
+    "bacterial_leaf_streak": 380,
+    "bacterial_panicle_blight": 337,
+    "blast": 1738,
+    "brown_spot": 965,
+    "dead_heart": 1442,
+    "downy_mildew": 620,
+    "hispa": 1594,
+    "normal": 1764,
+    "tungro": 1088
+  },
+  "image_format": "JPEG",
+  "image_mode": "RGB",
+  "complete": true
+}
+
+
+
+DATASET: SUGARCANE
+--------------------------------------------------------------------------------
+Dictionary with 9 keys
+- 'dataset_name': str
+  Value preview: 'Project-AgML/sugarcane_leaf_disease_classification'
+- 'expected_images': int
+- 'extracted_images': int
+- 'expected_classes': int
+- 'detected_classes': int
+- 'invalid_images': int
+- 'class_names': list
+  List with 11 elements
+  - Element 0: str
+    Value: 'Banded Chlorosis'
+  - Element 1: str
+    Value: 'Brown Spot'
+  - Element 2: str
+    Value: 'BrownRust'
+  - Element 3: str
+    Value: 'Dried'
+  - Element 4: str
+    Value: 'Grassy shoot'
+- 'class_distribution': dict
+  Dictionary with 11 keys
+  - 'Dried': int
+  - 'Yellow Leaf': int
+  - 'Banded Chlorosis': int
+  - 'Sett Rot': int
+  - 'Healthy': int
+  - 'Grassy shoot': int
+  - 'Pokkah Boeng': int
+  - 'Viral Disease': int
+  - 'BrownRust': int
+  - 'Smut': int
+  - 'Brown Spot': int
+- 'image_records': list
+  List with 6748 elements
+  - Element 0: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000000.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000000.jpg'
+  - Element 1: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000001.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000001.jpg'
+  - Element 2: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000002.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000002.jpg'
+  - Element 3: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000003.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000003.jpg'
+  - Element 4: dict
+    Dictionary with 4 keys
+    - 'filename': str
+      Value preview: 'train_000004.jpg'
+    - 'class': str
+      Value preview: 'Dried'
+    - 'split_source': str
+      Value preview: 'train'
+    - 'image_path': str
+      Value preview: 'E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000004.jpg'
+
+JSON CONTENT PREVIEW
+--------------------------------------------------------------------------------
+{
+  "dataset_name": "Project-AgML/sugarcane_leaf_disease_classification",
+  "expected_images": 6748,
+  "extracted_images": 6748,
+  "expected_classes": 11,
+  "detected_classes": 11,
+  "invalid_images": 0,
+  "class_names": [
+    "Banded Chlorosis",
+    "Brown Spot",
+    "BrownRust",
+    "Dried",
+    "Grassy shoot",
+    "Healthy",
+    "Pokkah Boeng",
+    "Sett Rot",
+    "Smut",
+    "Viral Disease",
+    "Yellow Leaf"
+  ],
+  "class_distribution": {
+    "Dried": 343,
+    "Yellow Leaf": 1194,
+    "Banded Chlorosis": 471,
+    "Sett Rot": 652,
+    "Healthy": 430,
+    "Grassy shoot": 346,
+    "Pokkah Boeng": 297,
+    "Viral Disease": 663,
+    "BrownRust": 314,
+    "Smut": 316,
+    "Brown Spot": 1722
+  },
+  "image_records": [
+    {
+      "filename": "train_000000.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000000.jpg"
+    },
+    {
+      "filename": "train_000001.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000001.jpg"
+    },
+    {
+      "filename": "train_000002.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000002.jpg"
+    },
+    {
+      "filename": "train_000003.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000003.jpg"
+    },
+    {
+      "filename": "train_000004.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000004.jpg"
+    },
+    {
+      "filename": "train_000005.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000005.jpg"
+    },
+    {
+      "filename": "train_000006.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000006.jpg"
+    },
+    {
+      "filename": "train_000007.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000007.jpg"
+    },
+    {
+      "filename": "train_000008.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000008.jpg"
+    },
+    {
+      "filename": "train_000009.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000009.jpg"
+    },
+    {
+      "filename": "train_000010.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000010.jpg"
+    },
+    {
+      "filename": "train_000011.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000011.jpg"
+    },
+    {
+      "filename": "train_000012.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000012.jpg"
+    },
+    {
+      "filename": "train_000013.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000013.jpg"
+    },
+    {
+      "filename": "train_000014.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000014.jpg"
+    },
+    {
+      "filename": "train_000015.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000015.jpg"
+    },
+    {
+      "filename": "train_000016.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000016.jpg"
+    },
+    {
+      "filename": "train_000017.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000017.jpg"
+    },
+    {
+      "filename": "train_000018.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000018.jpg"
+    },
+    {
+      "filename": "train_000019.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000019.jpg"
+    },
+    {
+      "filename": "train_000020.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000020.jpg"
+    },
+    {
+      "filename": "train_000021.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000021.jpg"
+    },
+    {
+      "filename": "train_000022.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000022.jpg"
+    },
+    {
+      "filename": "train_000023.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000023.jpg"
+    },
+    {
+      "filename": "train_000024.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000024.jpg"
+    },
+    {
+      "filename": "train_000025.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000025.jpg"
+    },
+    {
+      "filename": "train_000026.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000026.jpg"
+    },
+    {
+      "filename": "train_000027.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000027.jpg"
+    },
+    {
+      "filename": "train_000028.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000028.jpg"
+    },
+    {
+      "filename": "train_000029.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000029.jpg"
+    },
+    {
+      "filename": "train_000030.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000030.jpg"
+    },
+    {
+      "filename": "train_000031.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000031.jpg"
+    },
+    {
+      "filename": "train_000032.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000032.jpg"
+    },
+    {
+      "filename": "train_000033.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000033.jpg"
+    },
+    {
+      "filename": "train_000034.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000034.jpg"
+    },
+    {
+      "filename": "train_000035.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000035.jpg"
+    },
+    {
+      "filename": "train_000036.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000036.jpg"
+    },
+    {
+      "filename": "train_000037.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000037.jpg"
+    },
+    {
+      "filename": "train_000038.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000038.jpg"
+    },
+    {
+      "filename": "train_000039.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000039.jpg"
+    },
+    {
+      "filename": "train_000040.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000040.jpg"
+    },
+    {
+      "filename": "train_000041.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000041.jpg"
+    },
+    {
+      "filename": "train_000042.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000042.jpg"
+    },
+    {
+      "filename": "train_000043.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000043.jpg"
+    },
+    {
+      "filename": "train_000044.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000044.jpg"
+    },
+    {
+      "filename": "train_000045.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000045.jpg"
+    },
+    {
+      "filename": "train_000046.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\data\\raw\\sugarcane\\Dried\\train_000046.jpg"
+    },
+    {
+      "filename": "train_000047.jpg",
+      "class": "Dried",
+      "split_source": "train",
+      "image_path": "E:\\Abrokwa\\PycharmProjects\\pythonProject1\\pythonProject3\\d
+
+... JSON preview truncated ...
+
+
+
+===========================================================================
+PREPARING: RICE LEAF DISEASE
+===========================================================================
+2026-11-24 15:13:29,218 | WARNING | No usable image records extracted from rice manifest.
+Trying directory-based discovery.
+
+Validating images for rice...
+Valid images: 10407
+Invalid images: 0
+Usable images: 10407
+Number of classes: 10
+
+Class distribution:
+label
+normal                      1764
+blast                       1738
+hispa                       1594
+dead_heart                  1442
+tungro                      1088
+brown_spot                   965
+downy_mildew                 620
+bacterial_leaf_blight        479
+bacterial_leaf_streak        380
+bacterial_panicle_blight     337
+
+===========================================================================
+PREPARING: SUGARCANE LEAF DISEASE
+===========================================================================
+2026-11-24 15:13:59,645 | WARNING | No usable image records extracted from sugarcane manifest.
+Trying directory-based discovery.
+
+Validating images for sugarcane...
+Valid images: 13496
+Invalid images: 0
+Usable images: 13496
+Number of classes: 11
+
+Class distribution:
+label
+Brown Spot          3444
+Yellow Leaf         2388
+Viral Disease       1326
+Sett Rot            1304
+Banded Chlorosis     942
+Healthy              860
+Grassy shoot         692
+Dried                686
+Smut                 632
+BrownRust            628
+Pokkah Boeng         594
+
+Dataset metadata saved to: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\tables\dataset_metadata.json
+
+===========================================================================
+ENCODING AND SPLITTING: RICE
+===========================================================================
+
+RICE SPLIT SUMMARY
+------------------------------------------------------------
+Training:     7284 (69.99%)
+Validation:   1561 (15.00%)
+Testing:      1562 (15.01%)
+2026-11-24 15:16:49.702548: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE SSE2 SSE3 SSE4.1 SSE4.2 AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Number of classes: 10
+Class mapping: {'bacterial_leaf_blight': 0, 'bacterial_leaf_streak': 1, 'bacterial_panicle_blight': 2, 'blast': 3, 'brown_spot': 4, 'dead_heart': 5, 'downy_mildew': 6, 'hispa': 7, 'normal': 8, 'tungro': 9}
+TensorFlow datasets created successfully.
+
+===========================================================================
+ENCODING AND SPLITTING: SUGARCANE
+===========================================================================
+
+SUGARCANE SPLIT SUMMARY
+------------------------------------------------------------
+Training:     9447 (70.00%)
+Validation:   2024 (15.00%)
+Testing:      2025 (15.00%)
+Number of classes: 11
+Class mapping: {'Banded Chlorosis': 0, 'Brown Spot': 1, 'BrownRust': 2, 'Dried': 3, 'Grassy shoot': 4, 'Healthy': 5, 'Pokkah Boeng': 6, 'Sett Rot': 7, 'Smut': 8, 'Viral Disease': 9, 'Yellow Leaf': 10}
+TensorFlow datasets created successfully.
+
+================================================================================
+BLOCK 2 EXECUTION SUMMARY
+================================================================================
+
+RICE
+Classes: 10
+Training images: 7284
+Validation images: 1561
+Testing images: 1562
+Training image batch shape: (16, 224, 224, 3)
+Training label batch shape: (16,)
+
+SUGARCANE
+Classes: 11
+Training images: 9447
+Validation images: 2024
+Testing images: 2025
+Training image batch shape: (16, 224, 224, 3)
+Training label batch shape: (16,)
+
+BLOCK 2 COMPLETED
+
+=====================================================================================
+STARTING COMPLETE PLANT DISEASE CLASSIFICATION EXPERIMENT
+=====================================================================================
+
+OUTPUT DIRECTORIES
+-------------------------------------------------------------------------------------
+Figures: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\figures
+Tables: E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\tables
+
+DATASET VALIDATION
+-------------------------------------------------------------------------------------
+Dataset: rice
+  Type: dict
+Dataset: sugarcane
+  Type: dict
+
+Available datasets: ['rice', 'sugarcane']
+
+=====================================================================================
+TRAINING, VALIDATION, EVALUATION AND XAI
+=====================================================================================
+
+#####################################################################################
+STARTING EXPERIMENT: RICE
+#####################################################################################
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\backend.py:1398: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+2026-11-24 15:16:50,809 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\backend.py:1398: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\layers\normalization\batch_normalization.py:979: The name tf.nn.fused_batch_norm is deprecated. Please use tf.compat.v1.nn.fused_batch_norm instead.
+
+2026-11-24 15:16:51,359 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\layers\normalization\batch_normalization.py:979: The name tf.nn.fused_batch_norm is deprecated. Please use tf.compat.v1.nn.fused_batch_norm instead.
+
+2026-11-24 15:16:52,725 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\utils\tf_utils.py:492: The name tf.ragged.RaggedTensorValue is deprecated. Please use tf.compat.v1.ragged.RaggedTensorValue instead.
+
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\utils\tf_utils.py:492: The name tf.ragged.RaggedTensorValue is deprecated. Please use tf.compat.v1.ragged.RaggedTensorValue instead.
+
+WARNING:tensorflow:From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\engine\base_layer_utils.py:384: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+2026-11-24 15:16:54,465 | WARNING | From E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\engine\base_layer_utils.py:384: The name tf.executing_eagerly_outside_functions is deprecated. Please use tf.compat.v1.executing_eagerly_outside_functions instead.
+
+456/456 [==============================] - ETA: 0s - loss: 1.9979 - accuracy: 0.2705
+Epoch 1: val_loss improved from inf to 2.39413, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_CNN_MHA.keras
+456/456 [==============================] - 2170s 5s/step - loss: 1.9979 - accuracy: 0.2705 - val_loss: 2.3941 - val_accuracy: 0.2069 - lr: 1.0000e-04
+456/456 [==============================] - ETA: 0s - loss: 2.2032 - accuracy: 0.2066
+Epoch 1: val_loss improved from inf to 1.97486, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_EfficientNetB5.keras
+456/456 [==============================] - 1294s 3s/step - loss: 2.2032 - accuracy: 0.2066 - val_loss: 1.9749 - val_accuracy: 0.4183 - lr: 1.0000e-04
+456/456 [==============================] - ETA: 0s - loss: 1.9322 - accuracy: 0.3358
+Epoch 1: val_loss improved from inf to 1.67059, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_EfficientNetB5_finetuned.keras
+456/456 [==============================] - 1517s 3s/step - loss: 1.9322 - accuracy: 0.3358 - val_loss: 1.6706 - val_accuracy: 0.4580 - lr: 1.0000e-05
+456/456 [==============================] - ETA: 0s - loss: 4.0860 - accuracy: 0.1072
+Epoch 1: val_loss improved from inf to 2.82663, saving model to E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\results\checkpoints\rice_VGG16.keras
+
+=====================================================================================
+EXPERIMENT TERMINATED WITH AN ERROR
+=====================================================================================
+
+Error type: TypeError
+Error message: Cannot serialize object Ellipsis of type <class 'ellipsis'>. To be serializable, a class must implement the `get_config()` method.
+
+Full traceback:
+
+Previously generated checkpoints and results, if any, are retained.
+Traceback (most recent call last):
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 3404, in <module>
+    COMBINED_METRICS, EXPERIMENT_HISTORIES = run_full_experiment(
+                                             ^^^^^^^^^^^^^^^^^^^^
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 3247, in run_full_experiment
+    histories = train_experiment_models(dataset_name, data)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 2655, in train_experiment_models
+    member, histories[architecture] = fit_one_model(
+                                      ^^^^^^^^^^^^^^
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 2561, in fit_one_model
+    history = model.fit(
+              ^^^^^^^^^^
+  File "E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\utils\traceback_utils.py", line 70, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\saving\serialization_lib.py", line 395, in _get_class_or_fn_config
+    raise TypeError(
+TypeError: Cannot serialize object Ellipsis of type <class 'ellipsis'>. To be serializable, a class must implement the `get_config()` method.
+Traceback (most recent call last):
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 3404, in <module>
+    COMBINED_METRICS, EXPERIMENT_HISTORIES = run_full_experiment(
+                                             ^^^^^^^^^^^^^^^^^^^^
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 3247, in run_full_experiment
+    histories = train_experiment_models(dataset_name, data)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 2655, in train_experiment_models
+    member, histories[architecture] = fit_one_model(
+                                      ^^^^^^^^^^^^^^
+  File "E:\Abrokwa\PycharmProjects\pythonProject1\pythonProject3\main.py", line 2561, in fit_one_model
+    history = model.fit(
+              ^^^^^^^^^^
+  File "E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\utils\traceback_utils.py", line 70, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "E:\Abrokwa\Pychartsim\pythonProject1\oran_zenodo_data\Lib\site-packages\keras\src\saving\serialization_lib.py", line 395, in _get_class_or_fn_config
+    raise TypeError(
+TypeError: Cannot serialize object Ellipsis of type <class 'ellipsis'>. To be serializable, a class must implement the `get_config()` method.
+
+Process finished with exit code 1
